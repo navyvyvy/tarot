@@ -1,0 +1,42 @@
+{
+  "name": "NORU — 새벽 안개의 타로",
+  "short_name": "NORU",
+  "description": "달과 새벽이 만나는 곳, 운명이 속삭인다. 타로 카드 리딩과 탄생 카드 앱.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030209",
+  "theme_color": "#1a0848",
+  "lang": "ko",
+  "categories": ["lifestyle", "entertainment"],
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "타로 리딩",
+      "short_name": "리딩",
+      "description": "카드를 뽑아 오늘의 메시지를 읽는다",
+      "url": "./index.html?mode=tarot"
+    },
+    {
+      "name": "탄생 카드",
+      "short_name": "탄생 카드",
+      "description": "생년월일로 나의 타로 카드를 찾는다",
+      "url": "./index.html?mode=birth"
+    }
+  ]
+}

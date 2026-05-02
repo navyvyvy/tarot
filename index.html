@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- 앱 버전 — SW 캐시 버전과 동기화. 업데이트 시 이 값만 올리세요 -->
+<meta name="app-version" content="1.0.0">
+<title>NORU</title>
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<!-- iOS PWA 지원 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NORU">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<!-- 테마 색상 (브라우저 주소창) -->
+<meta name="theme-color" content="#1a0848">
+<!-- SEO / 공유 -->
+<meta name="description" content="새벽 안개 속 노루처럼, 고요히 운명과 마주하다. 타로 카드 리딩과 탄생 카드.">
+<meta property="og:title" content="NORU — 달과 새벽의 타로">
+<meta property="og:description" content="새벽 안개 속 노루처럼, 고요히 운명과 마주하다.">
+<meta property="og:type" content="website">
+<!-- 폰트 서버 사전 연결 (LCP 개선) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Libre+Baskerville:ital@1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+<style>
+/* ── TOKENS ── */
+:root{
+  --bg:#030209;
+  --panel:rgba(8,4,20,.96);
+  --bord:rgba(190,152,68,.2);
+  --gold:#c8a448;--gld2:#e8d07a;--gld3:#f6ecb4;
+  --pur:#5a2c8c;--pur2:#8a58c8;
+  --txt:#ede0c4;--dim:#8a7258;--acc:#de6878;
+  --cw:100px;--ch:170px;
+  --card-bg1:var(--card-bg1);
+  --card-bg2:var(--card-bg2);
+  --card-bg3:var(--card-bg3);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Pretendard',sans-serif;
+  font-size:15px;min-height:100vh;overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;font-weight:400}
+
+/* ── BG ── */
+#cvs{position:fixed;inset:0;pointer-events:none;z-index:0}
+.neb{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 50% at 15% 25%,rgba(90,44,140,.18) 0%,transparent 70%),
+             radial-gradient(ellipse 50% 60% at 85% 75%,rgba(90,44,140,.12) 0%,transparent 70%)}
+
+/* ── LAYOUT ── */
+.wrap{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 16px 80px}
+
+/* ── HEADER ── */
+header{text-align:center;padding:40px 0 20px}
+.logo-ico{font-size:2.8rem;display:block;margin-bottom:8px;
+  animation:float 5s ease-in-out infinite;
+  filter:drop-shadow(0 0 20px rgba(200,164,72,.9))}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(3deg)}}
+header h1{font-family:'Cinzel',serif;font-size:clamp(2rem,6vw,3rem);font-weight:700;
+  letter-spacing:.28em;
+  background:linear-gradient(160deg,var(--gold),var(--gld3) 48%,var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:5px}
+.tagline{font-family:'Libre Baskerville',serif;font-style:italic;
+  font-size:.9rem;color:var(--dim);letter-spacing:.12em}
+
+/* ── STEP ── */
+.step{display:none;background:var(--panel);border:1px solid var(--bord);
+  border-radius:12px;padding:20px;margin-bottom:12px;
+  backdrop-filter:blur(14px);box-shadow:0 8px 36px rgba(0,0,0,.45)}
+.step.ON{display:block;animation:fadeUp .4s cubic-bezier(.34,1.2,.64,1) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── STEP HEADER: label 왼쪽, 구분선, back 오른쪽 ── */
+.step-hd{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.step-lbl{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.22em;
+  color:var(--gld2);text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.step-line{flex:1;height:1px;background:linear-gradient(to right,rgba(200,164,72,.4),transparent)}
+.back-btn{flex-shrink:0;background:none;border:none;padding:0;
+  color:var(--dim);font-family:'Pretendard',sans-serif;font-size:.72rem;
+  cursor:pointer;transition:color .2s;white-space:nowrap}
+.back-btn:hover{color:var(--gold)}
+
+.step h2{font-family:'Libre Baskerville',serif;font-size:1.05rem;font-weight:400;
+  color:var(--txt);margin-bottom:14px;letter-spacing:.02em}
+
+/* ── MODE CARDS ── */
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mcard{padding:18px 12px;border-radius:10px;
+  border:1.5px solid rgba(90,44,140,.35);background:rgba(90,44,140,.08);
+  cursor:pointer;text-align:center;transition:all .22s}
+.mcard:hover{border-color:var(--gold);background:rgba(200,164,72,.06);transform:translateY(-2px)}
+.mcard.SEL{border-color:var(--gold);background:rgba(200,164,72,.1);
+  box-shadow:0 0 20px rgba(200,164,72,.18)}
+.m-ico{font-size:2rem;display:block;margin-bottom:7px}
+.m-nm{font-family:'Cinzel',serif;font-size:.82rem;color:var(--gld2);
+  letter-spacing:.08em;margin-bottom:3px}
+.m-ds{font-size:.7rem;color:var(--dim);line-height:1.4}
+
+/* ── DECK BUTTONS ── */
+.deck-row{display:flex;gap:8px;flex-wrap:wrap}
+.dbtn{flex:1;min-width:110px;padding:12px 8px;
+  background:rgba(90,44,140,.1);border:1.5px solid rgba(90,44,140,.32);
+  border-radius:10px;color:var(--dim);font-family:'Pretendard',sans-serif;
+  font-size:.8rem;cursor:pointer;transition:all .2s;text-align:center;line-height:1.55}
+.dbtn:hover{border-color:var(--gold);color:var(--gold)}
+.dbtn.ON{border-color:var(--gold);color:var(--gld2);background:rgba(200,164,72,.09);
+  box-shadow:0 0 16px rgba(200,164,72,.18)}
+.d-ico{font-size:1.3rem;display:block;margin-bottom:2px}
+.d-sub{font-size:.64rem;opacity:.48;margin-top:2px}
+
+/* ── COUNT BUTTONS ── */
+.cnt-row{display:flex;gap:6px;flex-wrap:nowrap;justify-content:center}
+.co{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex:1;min-width:0}
+.co-c{width:44px;height:44px;border-radius:50%;
+  background:rgba(90,44,140,.1);border:1.5px solid rgba(90,44,140,.32);
+  color:var(--dim);font-family:'Cinzel',serif;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.co:hover .co-c{border-color:var(--gold);color:var(--gold)}
+.co.ON .co-c{border-color:var(--gold);color:var(--gld2);
+  background:rgba(200,164,72,.09);box-shadow:0 0 12px rgba(200,164,72,.22)}
+.co-n{font-size:.58rem;color:var(--dim);text-align:center;
+  width:100%;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co.ON .co-n{color:var(--gold)}
+
+/* ── SPREAD INFO ── */
+.sp-info{display:none;margin-top:12px;background:rgba(90,44,140,.1);
+  border:1px solid rgba(90,44,140,.22);border-radius:8px;padding:14px 14px}
+.sp-info.ON{display:block;animation:fadeUp .28s ease both}
+.sp-info h3{font-family:'Libre Baskerville',serif;font-size:.9rem;font-weight:400;
+  color:var(--gold);margin-bottom:5px}
+.sp-info p{font-size:.8rem;color:var(--dim);line-height:1.7;margin-bottom:10px}
+.sp-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.sp-tag{font-size:.6rem;padding:3px 8px;border-radius:20px;white-space:nowrap;
+  background:rgba(200,164,72,.07);border:1px solid rgba(200,164,72,.2);color:var(--gold)}
+/* spread preview map — equal padding top and bottom */
+.sp-map{margin-top:14px;padding-top:14px;border-top:1px solid rgba(200,164,72,.1);
+  display:flex;justify-content:center;padding-bottom:4px}
+.smc{display:flex;flex-direction:column;align-items:center;gap:2px;
+  width:38px;flex-shrink:0} /* fixed width per slot */
+.sms{width:30px;height:46px;border-radius:4px;flex-shrink:0;
+  border:1.5px solid rgba(200,164,72,.32);background:rgba(90,44,140,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.64rem;color:var(--gold);font-family:'Cinzel',serif}
+.sml{font-size:.42rem;color:var(--dim);text-align:center;
+  width:38px;line-height:1.25;
+  height:22px; /* fixed height = 2 lines max */
+  overflow:hidden;
+  word-break:keep-all; /* break at spaces, not mid-word */
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.smb{width:38px;height:68px;visibility:hidden;flex-shrink:0} /* match sms+sml+gap */
+
+/* ── 역방향 확률 슬라이더 ── */
+.rev-setting{margin-top:12px;padding:12px 14px;
+  background:rgba(90,44,140,.08);border:1px solid rgba(90,44,140,.2);
+  border-radius:8px}
+.rev-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rev-lbl{font-size:.75rem;color:var(--dim)}
+.rev-val{font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold)}
+.rev-slider{width:100%;-webkit-appearance:none;appearance:none;height:3px;
+  border-radius:2px;background:rgba(200,164,72,.2);outline:none;cursor:pointer}
+.rev-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;
+  border-radius:50%;background:var(--gold);cursor:pointer;
+  box-shadow:0 0 8px rgba(200,164,72,.5)}
+.rev-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+  background:var(--gold);cursor:pointer;border:none}
+.rev-tips{display:flex;justify-content:space-between;margin-top:5px;
+  font-size:.56rem;color:var(--dim);opacity:.7}
+.btn-go{width:100%;padding:14px;margin-top:14px;
+  background:linear-gradient(135deg,#4a2088,#280e60);
+  border:1.5px solid var(--pur2);border-radius:12px;
+  color:var(--gld2);font-family:'Cinzel',serif;font-size:.92rem;letter-spacing:.12em;
+  cursor:pointer;transition:all .26s;box-shadow:0 4px 22px rgba(90,44,140,.4);
+  position:relative;overflow:hidden}
+.btn-go::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  transform:translateX(-120%);transition:transform .48s}
+.btn-go:hover::after{transform:translateX(120%)}
+.btn-go:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(90,44,140,.6);border-color:var(--gold)}
+.btn-go:active{transform:none}
+
+/* ── OVERLAYS ── */
+.ov{display:none;position:fixed;inset:0;z-index:200;background:rgba(3,2,9,.95);
+  flex-direction:column;align-items:center;justify-content:center;gap:22px}
+.ov.ON{display:flex;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.sh-row{display:flex;gap:8px}
+.sh-c{width:64px;height:110px;border-radius:8px;
+  background:linear-gradient(145deg,var(--card-bg1),var(--card-bg2));
+  border:1.5px solid rgba(200,164,72,.5);
+  display:flex;align-items:center;justify-content:center;font-size:1.7rem}
+.sh-c:nth-child(1){animation:sh1 1.1s ease-in-out infinite}
+.sh-c:nth-child(2){animation:sh2 1.1s ease-in-out infinite .12s}
+.sh-c:nth-child(3){animation:sh3 1.1s ease-in-out infinite .24s}
+@keyframes sh1{0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(-12deg) translateY(-20px)}}
+@keyframes sh2{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(2deg) translateY(-28px)}}
+@keyframes sh3{0%,100%{transform:rotate(8deg) translateY(0)}50%{transform:rotate(12deg) translateY(-20px)}}
+.rv-row{display:flex;gap:-8px}
+.rv-c{width:60px;height:102px;border-radius:8px;
+  background:linear-gradient(145deg,var(--card-bg1),var(--card-bg2));
+  border:1.5px solid rgba(200,164,72,.55);
+  display:flex;align-items:center;justify-content:center;font-size:1.6rem;
+  margin-left:-10px;transition:transform .3s}
+.rv-c:nth-child(1){transform:rotate(-12deg) translateY(8px);animation:rv1 1.3s ease-in-out infinite}
+.rv-c:nth-child(2){transform:rotate(-4deg) translateY(2px); animation:rv2 1.3s ease-in-out infinite .1s}
+.rv-c:nth-child(3){transform:rotate(4deg) translateY(2px);  animation:rv3 1.3s ease-in-out infinite .2s}
+.rv-c:nth-child(4){transform:rotate(12deg) translateY(8px); animation:rv4 1.3s ease-in-out infinite .3s}
+@keyframes rv1{0%,100%{transform:rotate(-12deg) translateY(8px)}50%{transform:rotate(-15deg) translateY(0)}}
+@keyframes rv2{0%,100%{transform:rotate(-4deg) translateY(2px)}50%{transform:rotate(-5deg) translateY(-6px)}}
+@keyframes rv3{0%,100%{transform:rotate(4deg) translateY(2px)}50%{transform:rotate(5deg) translateY(-6px)}}
+@keyframes rv4{0%,100%{transform:rotate(12deg) translateY(8px)}50%{transform:rotate(15deg) translateY(0)}}
+.ov-txt{font-family:'Cinzel',serif;font-size:1rem;color:var(--gld2);
+  letter-spacing:.14em;animation:pulse 1.1s ease-in-out infinite;text-align:center}
+.ov-sub{font-family:'Libre Baskerville',serif;font-style:italic;
+  font-size:.82rem;color:var(--dim);margin-top:-14px;text-align:center}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+
+/* ── CARD TRACK ── */
+.track-wrap{position:relative}
+.arr{position:absolute;top:50%;transform:translateY(-50%);z-index:10;
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(3,2,9,.9);border:1.5px solid var(--bord);
+  color:var(--gold);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:.82rem;transition:all .2s;backdrop-filter:blur(4px)}
+.arr:hover{background:rgba(90,44,140,.45);border-color:var(--gold)}
+.arr.L{left:-6px}.arr.R{right:-6px}.arr.H{opacity:0;pointer-events:none}
+.track-fade{overflow:hidden;border-radius:12px;position:relative}
+.track-fade::before,.track-fade::after{content:'';position:absolute;
+  top:0;bottom:0;width:36px;z-index:5;pointer-events:none}
+.track-fade::before{left:0;background:linear-gradient(to right,#03020980,transparent)}
+.track-fade::after{right:0;background:linear-gradient(to left,#03020980,transparent)}
+.ctrack{display:flex;gap:8px;padding:14px 18px;
+  overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  cursor:grab;user-select:none}
+.ctrack:active{cursor:grabbing}
+.ctrack::-webkit-scrollbar{display:none}
+.dc{flex:0 0 var(--cw);height:var(--ch);border-radius:9px;
+  border:1.5px solid rgba(200,164,72,.25);scroll-snap-align:center;
+  cursor:pointer;background:#0d0628;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;flex-shrink:0;touch-action:pan-x;position:relative;overflow:hidden;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,border-color .2s}
+/* no ::before overlay — it covers the card back image */
+.dc-n{font-size:.55rem;color:rgba(200,164,72,.5);letter-spacing:.1em;
+  position:relative;z-index:3}
+.dc:hover{transform:translateY(-8px) scale(1.05);
+  box-shadow:0 12px 28px rgba(90,44,140,.58);border-color:rgba(200,164,72,.62)}
+.dc.SEL{border-color:var(--gld2);transform:translateY(-12px) scale(1.07);
+  background:linear-gradient(145deg,#261452,#3a2080);
+  animation:glow 2s ease-in-out infinite}
+@keyframes glow{
+  0%,100%{box-shadow:0 0 16px rgba(200,164,72,.32),0 10px 26px rgba(90,44,140,.58)}
+  50%{box-shadow:0 0 28px rgba(200,164,72,.62),0 14px 32px rgba(90,44,140,.8)}}
+
+/* ── PROGRESS ── */
+.prog{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.prog-bg{flex:1;height:2.5px;border-radius:2px;background:rgba(200,164,72,.1);overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--pur2),var(--gold));
+  border-radius:2px;transition:width .3s ease;width:0}
+.prog-txt{font-size:.7rem;color:var(--gold);min-width:48px;text-align:right;white-space:nowrap}
+.hint{text-align:center;font-family:'Libre Baskerville',serif;font-style:italic;
+  font-size:.85rem;color:var(--dim);margin-bottom:10px}
+.hint em{color:var(--gold);font-style:normal}
+
+/* ── REVEAL BUTTON ── */
+.btn-rev{display:none;width:100%;padding:14px;margin-top:12px;
+  background:linear-gradient(135deg,#36165e,#1a0a3a);
+  border:1.5px solid rgba(200,164,72,.45);border-radius:12px;
+  color:var(--gld2);font-family:'Cinzel',serif;font-size:.88rem;letter-spacing:.12em;
+  cursor:pointer;transition:all .26s;box-shadow:0 4px 20px rgba(200,164,72,.15)}
+.btn-rev.ON{display:block;animation:fadeUp .28s ease both}
+.btn-rev:hover{box-shadow:0 6px 28px rgba(200,164,72,.35);transform:translateY(-2px)}
+
+/* ── RESULT CARDS ── */
+.pc{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.pc-frame{width:var(--cw);height:var(--ch);border-radius:9px;
+  border:2px solid rgba(200,164,72,.32);overflow:hidden;position:relative;
+  background:var(--card-bg3);display:flex;align-items:center;justify-content:center;
+  transition:all .25s cubic-bezier(.34,1.2,.64,1)}
+.pc:hover .pc-frame{border-color:var(--gld2);box-shadow:0 7px 22px rgba(200,164,72,.3);
+  transform:translateY(-4px)}
+.pc-frame img,.pc-frame>div{width:100%;height:100%;object-fit:cover;display:block;border-radius:0}
+.pc-frame img.REV{transform:rotate(180deg)}
+.ph{font-size:2rem;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.rv-b{display:none} /* reversed shown in label, not on image */
+.pc-num{position:absolute;top:4px;left:4px;background:rgba(10,4,28,.75);
+  color:var(--gld2);font-family:'Cinzel',serif;font-size:.56rem;font-weight:700;
+  border-radius:3px;padding:1px 5px;line-height:1.4;z-index:2;
+  border:1px solid rgba(200,164,72,.4)}
+.pc-lbl{font-family:'Cinzel',serif;font-size:.58rem;color:var(--gold);
+  text-align:center;max-width:var(--cw);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-name{font-size:.68rem;color:var(--txt);opacity:.8;text-align:center;
+  max-width:var(--cw);line-height:1.3;font-family:'Libre Baskerville',serif}
+.pc-blank{width:var(--cw);height:var(--ch);visibility:hidden;flex-shrink:0}
+
+/* ── SPREAD RESULT GRIDS ── */
+/* flex wrap for 1,3 card spreads */
+.rg-flex{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+/* 3x3 for 5-card cross */
+.rg-cross{display:grid;grid-template-columns:repeat(3,var(--cw));
+  gap:10px;justify-content:center;margin-bottom:18px}
+/* 7-card Star of David - absolute positioning
+   크기는 JS에서 CARD_W/CARD_H 기반으로 동적 계산하여 설정 */
+.rg-7{position:relative;margin:0 auto 24px;}
+
+/* ── CELTIC CROSS 5-COL ──
+   5 equal columns that fill the panel width.
+   Card width adapts: (panel - gaps) / 5
+   panel = 600px max, padding 20px each side → content ~560px
+   5 cols, 4 gaps of 6px → col width = (560-24)/5 = 107px max
+   On small screens auto-shrinks via minmax.
+*/
+.rg-cc{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+  margin-bottom:18px;
+  width:100%;
+}
+/* in CC grid, pc-frame uses 100% width with aspect ratio */
+.rg-cc .pc{width:100%}
+.rg-cc .pc-frame{width:100%;height:0;padding-bottom:172%;position:relative;overflow:hidden}
+.rg-cc .pc-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rg-cc .pc-frame img.REV{transform:rotate(180deg)}
+.rg-cc .ph{position:absolute;inset:0;font-size:1.6rem}
+.rg-cc .rv-b{font-size:.42rem;padding:1px 4px}
+.rg-cc .pc-num{font-size:.5rem;padding:1px 3px}
+.rg-cc .pc-lbl{font-size:.52rem}
+.rg-cc .pc-name{font-size:.6rem}
+.rg-cc .pc-blank{width:100%;height:0;padding-bottom:172%;visibility:hidden}
+
+/* ── EXTRA CARDS ── */
+.extra{display:none;margin-top:18px}
+.extra-lbl{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.2em;
+  color:var(--pur2);text-transform:uppercase;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px}
+.extra-lbl::after{content:'';flex:1;height:1px;
+  background:linear-gradient(to right,rgba(138,90,200,.3),transparent)}
+.extra-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+/* ── BOTTOM BUTTONS ── */
+.btn-more{display:none;width:100%;padding:13px;margin-top:10px;
+  background:rgba(90,44,140,.1);border:1.5px solid rgba(200,164,72,.24);
+  border-radius:12px;color:var(--gld2);font-family:'Libre Baskerville',serif;
+  font-style:italic;font-size:.88rem;cursor:pointer;transition:all .22s}
+.btn-more.ON{display:block}
+.btn-more:hover{border-color:var(--gold);background:rgba(200,164,72,.07)}
+.btn-reset{display:block;width:fit-content;margin:14px auto 0;
+  background:none;border:none;padding:6px 12px;
+  color:var(--dim);font-family:'Pretendard',sans-serif;font-size:.76rem;
+  cursor:pointer;transition:color .2s;
+  text-decoration:underline;text-decoration-color:rgba(138,114,88,.28);
+  text-underline-offset:3px}
+.btn-reset:hover{color:var(--gold)}
+
+/* ── BIRTH CARD ── */
+.bth-row{display:flex;gap:8px;flex-wrap:wrap}
+.bth-grp{display:flex;flex-direction:column;gap:4px;flex:1;min-width:80px}
+.bth-lbl{font-size:.72rem;color:var(--dim);letter-spacing:.04em}
+.bth-sel{width:100%;padding:10px 11px;
+  background:rgba(90,44,140,.12);border:1.5px solid rgba(90,44,140,.32);
+  border-radius:8px;color:var(--txt);font-family:'Pretendard',sans-serif;font-size:.88rem;
+  outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23c8a448' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;
+  transition:border-color .2s}
+.bth-sel:focus{border-color:var(--gold)}
+.bth-sel option{background:var(--card-bg3);color:var(--txt)}
+.birth-res{display:none;margin-top:16px;animation:fadeUp .35s ease both}
+.birth-res.ON{display:block}
+.birth-cards{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.birth-desc-box{background:rgba(90,44,140,.1);border:1px solid rgba(90,44,140,.22);
+  border-radius:8px;padding:13px 15px}
+.birth-desc-box h4{font-family:'Cinzel',serif;font-size:.76rem;letter-spacing:.14em;
+  color:var(--gold);margin-bottom:7px}
+.birth-desc-box p{font-size:.86rem;color:var(--txt);opacity:.9;line-height:1.8}
+.trio-note{font-size:.7rem;color:var(--pur2);text-align:center;margin-bottom:8px;
+  font-family:'Libre Baskerville',serif;font-style:italic}
+
+/* ── MODAL ── */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:100;
+  display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(5px)}
+.mbg.OPEN{display:flex;animation:fadeIn .16s ease}
+.msh{background:linear-gradient(155deg,#120b32,#08041c);
+  border:1px solid rgba(200,164,72,.25);border-radius:22px 22px 0 0;
+  width:100%;max-width:600px;max-height:88vh;overflow-y:auto;
+  padding:0 0 40px;animation:slideUp .36s cubic-bezier(.34,1.2,.64,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.msh::-webkit-scrollbar{width:3px}
+.msh::-webkit-scrollbar-thumb{background:rgba(200,164,72,.2);border-radius:2px}
+.m-grip{width:32px;height:4px;background:rgba(200,164,72,.2);
+  border-radius:2px;margin:11px auto 16px}
+.m-top{display:flex;gap:16px;padding:0 20px 16px;border-bottom:1px solid var(--bord)}
+.m-imgbox{width:120px;flex-shrink:0}
+.m-imgbox img{width:120px;height:205px;border-radius:9px;object-fit:cover;
+  border:2px solid rgba(200,164,72,.38);display:block}
+.m-imgbox img.REV{transform:rotate(180deg)}
+.m-imgph{width:120px;height:205px;border-radius:9px;
+  border:2px solid rgba(200,164,72,.22);background:linear-gradient(145deg,#1a0d3c,#281862);
+  display:flex;align-items:center;justify-content:center;font-size:2.4rem}
+.m-meta{flex:1;min-width:0}
+.m-arc{font-size:.6rem;letter-spacing:.18em;color:var(--gold);opacity:.68;
+  text-transform:uppercase;margin-bottom:3px}
+.m-nm{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gld2);
+  margin-bottom:4px;line-height:1.22}
+.m-rev{display:inline-block;font-size:.6rem;padding:2px 6px;
+  background:rgba(222,104,120,.1);border:1px solid rgba(222,104,120,.4);
+  color:var(--acc);border-radius:20px;margin-bottom:6px}
+.m-kws{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.kw{font-size:.6rem;padding:2px 6px;background:rgba(90,44,140,.18);
+  border:1px solid rgba(90,44,140,.38);color:var(--pur2);border-radius:20px}
+.m-body{padding:16px 20px}
+.m-sec{margin-bottom:14px}.m-sec:last-child{margin-bottom:0}
+.m-sec-t{font-family:'Cinzel',serif;font-size:.63rem;letter-spacing:.2em;
+  color:var(--gold);text-transform:uppercase;opacity:.72;margin-bottom:6px;
+  display:flex;align-items:center;gap:7px}
+.m-sec-t::after{content:'';flex:1;height:1px;
+  background:linear-gradient(to right,rgba(200,164,72,.2),transparent)}
+.m-hl{background:rgba(200,164,72,.06);border-left:3px solid var(--gold);
+  border-radius:0 7px 7px 0;padding:10px 12px;margin-bottom:8px}
+.m-hl p{font-size:.9rem;line-height:1.88;color:var(--txt)}
+.m-rv-note{font-size:.76rem;color:var(--dim);line-height:1.72;
+  padding-top:7px;border-top:1px solid var(--bord)}
+.m-rv-note em{color:var(--acc);font-size:.65rem;font-style:normal}
+.m-sec p{font-size:.88rem;line-height:1.85;color:var(--txt);opacity:.9}
+.m-close{display:block;width:calc(100% - 40px);margin:0 20px;padding:12px;
+  background:rgba(90,44,140,.14);border:1px solid rgba(90,44,140,.36);
+  border-radius:10px;color:var(--dim);font-family:'Pretendard',sans-serif;
+  font-size:.88rem;cursor:pointer;transition:all .2s}
+.m-close:hover{background:rgba(90,44,140,.3);color:var(--txt)}
+
+/* ── 이미지 확대 오버레이 ── */
+.img-zoom-bg{display:none;position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.92);align-items:center;justify-content:center;
+  cursor:zoom-out;backdrop-filter:blur(8px)}
+.img-zoom-bg.OPEN{display:flex;animation:fadeIn .18s ease}
+.img-zoom-wrap{position:relative;max-width:min(380px,90vw);
+  animation:zoomIn .22s cubic-bezier(.34,1.2,.64,1)}
+@keyframes zoomIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.img-zoom-wrap img{width:100%;height:auto;border-radius:12px;display:block;
+  box-shadow:0 0 60px rgba(200,164,72,.3)}
+/* ── 카드 3D 뒤집기 애니메이션 ── */
+.pc-frame{transform-style:preserve-3d}
+.pc-frame.flip-in{animation:flipIn .55s cubic-bezier(.4,0,.2,1) both}
+@keyframes flipIn{
+  0%  {transform:rotateY(-90deg) scale(.85);opacity:0}
+  50% {transform:rotateY(10deg)  scale(1.04)}
+  100%{transform:rotateY(0deg)   scale(1);opacity:1}
+}
+.m-imgbox{cursor:zoom-in;transition:opacity .15s}
+.m-imgbox:hover{opacity:.88}
+
+/* ── 에러 토스트 알림 ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:rgba(222,104,120,.95);color:#fff;padding:10px 20px;border-radius:8px;
+  font-size:.82rem;z-index:400;opacity:0;transition:all .3s cubic-bezier(.34,1.2,.64,1);
+  pointer-events:none;max-width:80vw;text-align:center;backdrop-filter:blur(8px)}
+.toast.ON{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<canvas id="cvs"></canvas>
+<div class="neb"></div>
+<div class="wrap">
+
+<header>
+  <span class="logo-ico" id="logoMoon"></span>
+  <h1>NORU</h1>
+  <p class="tagline" data-i18n="ui.appTagline">새벽 안개 속 노루처럼, 고요히 운명과 마주하다</p>
+</header>
+
+<!-- S0 시작 -->
+<div class="step ON" id="s0" role="main" aria-label="시작 화면">
+  <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepStart">시작하기</span><span class="step-line"></span></div>
+  <h2>오늘 무엇을 보시겠어요?</h2>
+  <div class="mode-row">
+    <div class="mcard" id="mT">
+      <span class="m-ico">🃏</span>
+      <div class="m-nm" data-i18n="ui.modeTarot">타로 리딩</div>
+      <div class="m-ds" data-i18n="ui.modeTarotDesc">카드를 뽑아 운명의 메시지를 읽는다</div>
+    </div>
+    <div class="mcard" id="mB">
+      <span class="m-ico">✨</span>
+      <div class="m-nm" data-i18n="ui.modeBirth">탄생 카드</div>
+      <div class="m-ds" data-i18n="ui.modeBirthDesc">생년월일로 나의 타로 카드를 찾는다</div>
+    </div>
+  </div>
+</div>
+
+<!-- S1 덱 선택 -->
+<div class="step" id="s1" role="region" aria-label="덱 선택">
+  <div class="step-hd">
+    <span class="step-lbl" data-i18n="ui.stepDeck">I · 덱 선택</span>
+    <span class="step-line"></span>
+    <button class="back-btn" id="bk1" aria-label="처음으로 돌아가기">← 처음으로</button>
+  </div>
+  <h2>어떤 덱으로 점을 치시겠어요?</h2>
+  <div class="deck-row">
+    <button class="dbtn ON" data-deck="major" role="radio" aria-checked="true" aria-label="메이저 아르카나 덱">
+      <span class="d-ico">✨</span>메이저 아르카나<div class="d-sub">22장 · 삶의 큰 흐름</div>
+    </button>
+    <button class="dbtn" data-deck="minor" role="radio" aria-checked="false" aria-label="마이너 아르카나 덱">
+      <span class="d-ico">🃏</span>마이너 아르카나<div class="d-sub">56장 · 일상의 에너지</div>
+    </button>
+    <button class="dbtn" data-deck="all" role="radio" aria-checked="false" aria-label="전체 78장 덱">
+      <span class="d-ico">🌟</span>전체 78장<div class="d-sub">완전한 점술</div>
+    </button>
+  </div>
+  <button class="btn-go" id="toS2">스프레드 선택 →</button>
+</div>
+
+<!-- S2 스프레드 -->
+<div class="step" id="s2" role="region" aria-label="스프레드 선택">
+  <div class="step-hd">
+    <span class="step-lbl" data-i18n="ui.stepSpread">II · 스프레드</span>
+    <span class="step-line"></span>
+    <button class="back-btn" id="bk2" aria-label="덱 선택으로 돌아가기">← 덱 변경</button>
+  </div>
+  <h2>몇 장의 카드를 펼치시겠어요?</h2>
+  <div class="cnt-row">
+    <div class="co ON" data-n="1" role="radio" aria-checked="true" aria-label="1장 스프레드"><div class="co-c">1</div><div class="co-n">원카드</div></div>
+    <div class="co" data-n="3" role="radio" aria-checked="false" aria-label="3장 스프레드"><div class="co-c">3</div><div class="co-n">쓰리카드</div></div>
+    <div class="co" data-n="5" role="radio" aria-checked="false" aria-label="5장 스프레드"><div class="co-c">5</div><div class="co-n">파이브크로스</div></div>
+    <div class="co" data-n="7" role="radio" aria-checked="false" aria-label="7장 스프레드"><div class="co-c">7</div><div class="co-n">매직세븐</div></div>
+    <div class="co" data-n="10" role="radio" aria-checked="false" aria-label="10장 스프레드"><div class="co-c">10</div><div class="co-n">켈틱크로스</div></div>
+  </div>
+  <div class="sp-info" id="spInfo"></div>
+  <!-- 역방향 확률 설정 -->
+  <div class="rev-setting">
+    <div class="rev-row">
+      <span class="rev-lbl" data-i18n="ui.revLabel">역방향 확률</span>
+      <span class="rev-val" id="revVal">50%</span>
+    </div>
+    <input type="range" class="rev-slider" id="revSlider" min="0" max="100" value="50" step="5" aria-label="역방향 카드 출현 확률" aria-valuetext="50%">
+    <div class="rev-tips">
+      <span data-i18n="ui.revTip0">0% 정방향만</span><span data-i18n="ui.revTip50">50% 전통 타로</span><span data-i18n="ui.revTip100">100% 역방향만</span>
+    </div>
+  </div>
+  <button class="btn-go" id="toS3" aria-label="카드 섞기 시작">카드 섞기 🔮</button>
+</div>
+
+<!-- S3 카드 선택 -->
+<div class="step" id="s3" role="region" aria-label="카드 선택">
+  <div class="step-hd">
+    <span class="step-lbl" data-i18n="ui.stepPick">III · 카드 선택</span>
+    <span class="step-line"></span>
+    <button class="back-btn" id="bk3" aria-label="스프레드 선택으로 돌아가기">← 스프레드 변경</button>
+  </div>
+  <p class="hint" id="hint">마음이 이끄는 카드를 <em>탭</em>하세요 · <em>드래그</em>로 탐색</p>
+  <div class="prog">
+    <div class="prog-bg" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="카드 선택 진행률"><div class="prog-fill" id="pFill"></div></div>
+    <div class="prog-txt" id="pTxt">0 / 0</div>
+  </div>
+  <div class="track-wrap">
+    <button class="arr L H" id="arrL">◀</button>
+    <div class="track-fade"><div class="ctrack" id="ctrack" role="list" aria-label="타로 카드 덱"></div></div>
+    <button class="arr R H" id="arrR">▶</button>
+  </div>
+  <button class="btn-rev" id="btnRev">✦ &nbsp;선택한 카드 펼쳐보기&nbsp; ✦</button>
+</div>
+
+<!-- S4 결과 -->
+<div class="step" id="s4" role="region" aria-label="리딩 결과">
+  <div class="step-hd">
+    <span class="step-lbl" data-i18n="ui.stepResult">IV · 리딩 결과</span>
+    <span class="step-line"></span>
+    <button class="back-btn" id="bk4" aria-label="카드 다시 선택하기">← 카드 다시 선택</button>
+  </div>
+  <h2 id="s4title"></h2>
+  <p id="s4desc" style="font-size:.8rem;color:var(--dim);line-height:1.72;margin-bottom:14px;margin-top:-8px"></p>
+  <div id="s4grid"></div>
+  <div class="extra" id="extra">
+    <div class="extra-lbl">새벽이 전하는 추가 메시지</div>
+    <div class="extra-grid" id="extraGrid"></div>
+  </div>
+  <button class="btn-more" id="btnMore">✦ &nbsp;새벽이 아직 할 말이 남아 있습니다&nbsp; ✦</button>
+  <button class="btn-reset" id="rst4">↩ 처음으로</button>
+</div>
+
+<!-- S5 탄생 카드 -->
+<div class="step" id="s5" role="region" aria-label="탄생 카드">
+  <div class="step-hd">
+    <span class="step-lbl" data-i18n="ui.stepBirth">탄생 타로카드</span>
+    <span class="step-line"></span>
+    <button class="back-btn" id="bk5" aria-label="처음으로 돌아가기">← 처음으로</button>
+  </div>
+  <h2>생년월일을 선택해주세요</h2>
+  <div class="bth-row">
+    <div class="bth-grp" style="flex:2">
+      <div class="bth-lbl" data-i18n="ui.birthYearLabel">출생 연도</div>
+      <select class="bth-sel" id="bYear"></select>
+    </div>
+    <div class="bth-grp">
+      <div class="bth-lbl" data-i18n="ui.birthMonthLabel">월</div>
+      <select class="bth-sel" id="bMonth">
+        <option value="">월</option>
+        <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+        <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+        <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+        <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+      </select>
+    </div>
+    <div class="bth-grp">
+      <div class="bth-lbl" data-i18n="ui.birthDayLabel">일</div>
+      <select class="bth-sel" id="bDay"><option value="">일</option></select>
+    </div>
+  </div>
+  <button class="btn-go" id="calcBtn" aria-label="탄생 카드 계산하기" style="margin-top:14px">나의 탄생 카드 찾기 ✨</button>
+  <div class="birth-res" id="birthRes"></div>
+  <button class="btn-reset" id="rst5">↩ 처음으로</button>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- 셔플 오버레이 -->
+<div class="ov" id="ovSh">
+  <div class="sh-row">
+    <div class="sh-c">🔮</div><div class="sh-c">⭐</div><div class="sh-c">🌅</div>
+  </div>
+  <div class="ov-txt">운명의 패를 섞는 중...</div>
+  <div class="ov-sub">눈을 감고 질문을 떠올려보세요</div>
+</div>
+
+<!-- 공개 오버레이 -->
+<div class="ov" id="ovRv">
+  <div class="rv-row">
+    <div class="rv-c">🌒</div><div class="rv-c">✨</div>
+    <div class="rv-c">⭐</div><div class="rv-c">🌅</div>
+  </div>
+  <div class="ov-txt">카드의 목소리를 읽는 중...</div>
+  <div class="ov-sub">새벽의 에너지가 흐르고 있습니다</div>
+</div>
+
+<!-- 이미지 확대 오버레이 -->
+<div class="img-zoom-bg" id="imgZoom" role="dialog" aria-modal="true" aria-label="카드 이미지 확대">
+  <div class="img-zoom-wrap" id="imgZoomWrap"></div>
+</div>
+
+<!-- 모달 -->
+<div class="mbg" id="mbg" role="dialog" aria-modal="true" aria-labelledby="mName">
+  <div class="msh">
+    <div class="m-grip"></div>
+    <div class="m-top">
+      <div class="m-imgbox" id="mImgBox"></div>
+      <div class="m-meta">
+        <div class="m-arc" id="mArc"></div>
+        <div class="m-nm" id="mName"></div>
+        <div id="mRevTag"></div>
+        <div class="m-kws" id="mKws"></div>
+      </div>
+    </div>
+    <div class="m-body" id="mBody"></div>
+    <button class="m-close" id="mClose" aria-label="카드 상세 닫기">닫기</button>
+  </div>
+</div>
+
+<!-- 에러 토스트 -->
+<div class="toast" id="toast" role="alert" aria-live="polite"></div>
+
+<script src="locale/ko.js"></script>
+<script>
+/* ═══ STARFIELD ═══ */
+(function(){
+  var c=document.getElementById('cvs'),X=c.getContext('2d'),stars=[];
+  function rsz(){c.width=innerWidth;c.height=innerHeight}
+  function ini(){stars=[];for(var i=0;i<100;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2+.2,a:Math.random(),da:(Math.random()-.5)*.006,g:Math.random()<.1})}
+  /* 탭이 숨겨지면 애니메이션 중지 (배터리/성능 절약) */
+  function drw(){if(document.hidden)return requestAnimationFrame(drw);X.clearRect(0,0,c.width,c.height);stars.forEach(function(s){s.a+=s.da;if(s.a<0||s.a>1)s.da*=-1;X.beginPath();X.arc(s.x,s.y,s.r,0,Math.PI*2);X.fillStyle=s.g?'rgba(200,164,72,'+s.a+')':'rgba(255,255,255,'+(s.a*.72)+')';X.fill()});requestAnimationFrame(drw)}
+  rsz();ini();drw();addEventListener('resize',function(){rsz();ini()});
+})();
+
+/* ═══ CARD IMAGES — Wikimedia Commons RWS (public domain 1909) ═══
+   All URLs verified from Wikimedia Commons category pages.
+════════════════════════════════════════════════════════ */
+
+/* Major Arcana — id 0-21 */
+var WIKI_MAJ=[
+  'https://upload.wikimedia.org/wikipedia/commons/9/90/RWS_Tarot_00_Fool.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/d/de/RWS_Tarot_01_Magician.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/8/88/RWS_Tarot_02_High_Priestess.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/d/d2/RWS_Tarot_03_Empress.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/c/c3/RWS_Tarot_04_Emperor.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/8/8d/RWS_Tarot_05_Hierophant.jpg',
+  /* 6 연인 */
+  'https://upload.wikimedia.org/wikipedia/commons/d/db/RWS_Tarot_06_Lovers.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/9/9b/RWS_Tarot_07_Chariot.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/f/f5/RWS_Tarot_08_Strength.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/4/4d/RWS_Tarot_09_Hermit.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/3/3c/RWS_Tarot_10_Wheel_of_Fortune.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/e/e0/RWS_Tarot_11_Justice.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/2/2b/RWS_Tarot_12_Hanged_Man.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/d/d7/RWS_Tarot_13_Death.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/f/f8/RWS_Tarot_14_Temperance.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/5/55/RWS_Tarot_15_Devil.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/5/53/RWS_Tarot_16_Tower.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/d/db/RWS_Tarot_17_Star.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/7/7f/RWS_Tarot_18_Moon.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/1/17/RWS_Tarot_19_Sun.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/d/dd/RWS_Tarot_20_Judgement.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/f/ff/RWS_Tarot_21_World.jpg'
+];
+
+/* Minor Arcana — all verified from Wikimedia Commons */
+var WIKI_MINOR={
+  /* Wands */
+  'Wands01':'https://upload.wikimedia.org/wikipedia/commons/1/11/Wands01.jpg',
+  'Wands02':'https://upload.wikimedia.org/wikipedia/commons/0/0f/Wands02.jpg',
+  'Wands03':'https://upload.wikimedia.org/wikipedia/commons/f/ff/Wands03.jpg',
+  'Wands04':'https://upload.wikimedia.org/wikipedia/commons/a/a4/Wands04.jpg',
+  'Wands05':'https://upload.wikimedia.org/wikipedia/commons/9/9d/Wands05.jpg',
+  'Wands06':'https://upload.wikimedia.org/wikipedia/commons/3/3b/Wands06.jpg',
+  'Wands07':'https://upload.wikimedia.org/wikipedia/commons/e/e4/Wands07.jpg',
+  'Wands08':'https://upload.wikimedia.org/wikipedia/commons/6/6b/Wands08.jpg',
+  'Wands09':'https://upload.wikimedia.org/wikipedia/commons/e/e7/Wands09.jpg',
+  'Wands10':'https://upload.wikimedia.org/wikipedia/commons/0/0b/Wands10.jpg',
+  'Wands11':'https://upload.wikimedia.org/wikipedia/commons/6/6a/Wands11.jpg',
+  'Wands12':'https://upload.wikimedia.org/wikipedia/commons/1/16/Wands12.jpg',
+  'Wands13':'https://upload.wikimedia.org/wikipedia/commons/0/0d/Wands13.jpg',
+  'Wands14':'https://upload.wikimedia.org/wikipedia/commons/c/ce/Wands14.jpg',
+  /* Cups */
+  'Cups01':'https://upload.wikimedia.org/wikipedia/commons/3/36/Cups01.jpg',
+  'Cups02':'https://upload.wikimedia.org/wikipedia/commons/f/f8/Cups02.jpg',
+  'Cups03':'https://upload.wikimedia.org/wikipedia/commons/7/7a/Cups03.jpg',
+  'Cups04':'https://upload.wikimedia.org/wikipedia/commons/3/35/Cups04.jpg',
+  'Cups05':'https://upload.wikimedia.org/wikipedia/commons/d/d7/Cups05.jpg',
+  'Cups06':'https://upload.wikimedia.org/wikipedia/commons/1/17/Cups06.jpg',
+  'Cups07':'https://upload.wikimedia.org/wikipedia/commons/a/ae/Cups07.jpg',
+  'Cups08':'https://upload.wikimedia.org/wikipedia/commons/6/60/Cups08.jpg',
+  'Cups09':'https://upload.wikimedia.org/wikipedia/commons/2/24/Cups09.jpg',
+  'Cups10':'https://upload.wikimedia.org/wikipedia/commons/8/84/Cups10.jpg',
+  'Cups11':'https://upload.wikimedia.org/wikipedia/commons/a/ad/Cups11.jpg',
+  'Cups12':'https://upload.wikimedia.org/wikipedia/commons/f/fa/Cups12.jpg',
+  'Cups13':'https://upload.wikimedia.org/wikipedia/commons/6/62/Cups13.jpg',
+  'Cups14':'https://upload.wikimedia.org/wikipedia/commons/0/04/Cups14.jpg',
+  /* Swords */
+  'Swords01':'https://upload.wikimedia.org/wikipedia/commons/1/1a/Swords01.jpg',
+  'Swords02':'https://upload.wikimedia.org/wikipedia/commons/9/9e/Swords02.jpg',
+  'Swords03':'https://upload.wikimedia.org/wikipedia/commons/0/02/Swords03.jpg',
+  'Swords04':'https://upload.wikimedia.org/wikipedia/commons/b/bf/Swords04.jpg',
+  'Swords05':'https://upload.wikimedia.org/wikipedia/commons/2/23/Swords05.jpg',
+  'Swords06':'https://upload.wikimedia.org/wikipedia/commons/2/29/Swords06.jpg',
+  'Swords07':'https://upload.wikimedia.org/wikipedia/commons/3/34/Swords07.jpg',
+  'Swords08':'https://upload.wikimedia.org/wikipedia/commons/a/a7/Swords08.jpg',
+  'Swords09':'https://upload.wikimedia.org/wikipedia/commons/2/2f/Swords09.jpg',
+  'Swords10':'https://upload.wikimedia.org/wikipedia/commons/d/d4/Swords10.jpg',
+  'Swords11':'https://upload.wikimedia.org/wikipedia/commons/4/4c/Swords11.jpg',
+  'Swords12':'https://upload.wikimedia.org/wikipedia/commons/b/b0/Swords12.jpg',
+  'Swords13':'https://upload.wikimedia.org/wikipedia/commons/d/d4/Swords13.jpg',
+  'Swords14':'https://upload.wikimedia.org/wikipedia/commons/3/33/Swords14.jpg',
+  /* Pentacles */
+  'Pents01':'https://upload.wikimedia.org/wikipedia/commons/f/fd/Pents01.jpg',
+  'Pents02':'https://upload.wikimedia.org/wikipedia/commons/9/9f/Pents02.jpg',
+  'Pents03':'https://upload.wikimedia.org/wikipedia/commons/4/42/Pents03.jpg',
+  'Pents04':'https://upload.wikimedia.org/wikipedia/commons/3/35/Pents04.jpg',
+  'Pents05':'https://upload.wikimedia.org/wikipedia/commons/9/96/Pents05.jpg',
+  'Pents06':'https://upload.wikimedia.org/wikipedia/commons/a/a6/Pents06.jpg',
+  'Pents07':'https://upload.wikimedia.org/wikipedia/commons/6/6a/Pents07.jpg',
+  'Pents08':'https://upload.wikimedia.org/wikipedia/commons/4/49/Pents08.jpg',
+  'Pents09':'https://upload.wikimedia.org/wikipedia/commons/f/f0/Pents09.jpg',
+  'Pents10':'https://upload.wikimedia.org/wikipedia/commons/4/42/Pents10.jpg',
+  'Pents11':'https://upload.wikimedia.org/wikipedia/commons/e/ec/Pents11.jpg',
+  'Pents12':'https://upload.wikimedia.org/wikipedia/commons/d/d5/Pents12.jpg',
+  'Pents13':'https://upload.wikimedia.org/wikipedia/commons/8/88/Pents13.jpg',
+  'Pents14':'https://upload.wikimedia.org/wikipedia/commons/1/1c/Pents14.jpg'
+};
+
+/* suit → key prefix */
+/* number → 2-digit */
+
+
+function cardImgUrl(card){
+  if(card.type==='major') return WIKI_MAJ[card.id]||'';
+  /* suitCode/numCode 사용 (언어 독립적) */
+  var s=WIKI_SUIT[card.suitCode], n=WIKI_NUM[card.numCode];
+  return (s&&n) ? (WIKI_MINOR[s+n]||'') : '';
+}
+
+/* Card back — ornate crescent moon design */
+var CARD_BACK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 600" preserveAspectRatio="xMidYMid slice">'
++'<defs>'
++'<linearGradient id="cb" x1="0.2" y1="0" x2="0.8" y2="1">'
++'<stop offset="0%" stop-color="#100538"/>'
++'<stop offset="40%" stop-color="#1c0a4e"/>'
++'<stop offset="100%" stop-color="#06021a"/>'
++'</linearGradient>'
++'<pattern id="dp" width="22" height="22" patternUnits="userSpaceOnUse">'
++'<circle cx="11" cy="11" r="0.7" fill="#c8a448" fill-opacity="0.14"/>'
++'</pattern>'
++'<pattern id="dg" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
++'<rect x="0" y="0" width="40" height="40" fill="none" stroke="#c8a448" stroke-width="0.3" stroke-opacity="0.1"/>'
++'</pattern>'
++'<mask id="bm"><circle cx="175" cy="255" r="72" fill="white"/><circle cx="205" cy="236" r="57" fill="black"/></mask>'
++'<radialGradient id="mg" cx="38%" cy="38%" r="62%">'
++'<stop offset="0%" stop-color="#f6ecb4" stop-opacity="0.95"/>'
++'<stop offset="55%" stop-color="#e8d07a" stop-opacity="0.65"/>'
++'<stop offset="100%" stop-color="#c8a448" stop-opacity="0.2"/>'
++'</radialGradient>'
++'</defs>'
++'<rect width="350" height="600" fill="url(#cb)"/>'
++'<rect width="350" height="600" fill="url(#dp)"/>'
++'<rect width="350" height="600" fill="url(#dg)"/>'
++'<rect x="10" y="10" width="330" height="580" rx="12" fill="none" stroke="#c8a448" stroke-width="1.6" stroke-opacity="0.5"/>'
++'<rect x="17" y="17" width="316" height="566" rx="9" fill="none" stroke="#c8a448" stroke-width="0.7" stroke-opacity="0.22"/>'
++'<rect x="24" y="24" width="302" height="552" rx="6" fill="none" stroke="#c8a448" stroke-width="0.3" stroke-opacity="0.12"/>'
++'<g fill="none" stroke="#c8a448" stroke-opacity="0.35" stroke-width="1">'
++'<path d="M28,28 L50,28 M28,28 L28,50"/>'
++'<path d="M322,28 L300,28 M322,28 L322,50"/>'
++'<path d="M28,572 L50,572 M28,572 L28,550"/>'
++'<path d="M322,572 L300,572 M322,572 L322,550"/>'
++'</g>'
++'<line x1="55" y1="100" x2="295" y2="100" stroke="#c8a448" stroke-width="0.5" stroke-opacity="0.2"/>'
++'<circle cx="175" cy="100" r="2.5" fill="#c8a448" fill-opacity="0.3"/>'
++'<circle cx="175" cy="255" r="88" fill="none" stroke="#c8a448" stroke-width="0.4" stroke-opacity="0.1"/>'
++'<circle cx="175" cy="255" r="80" fill="none" stroke="#c8a448" stroke-width="0.3" stroke-opacity="0.08"/>'
++'<circle cx="175" cy="255" r="75" fill="#c8a448" fill-opacity="0.04" mask="url(#bm)"/>'
++'<circle cx="175" cy="255" r="72" fill="url(#mg)" mask="url(#bm)"/>'
++'<circle cx="175" cy="255" r="72" fill="none" stroke="#e8d07a" stroke-width="1.3" stroke-opacity="0.6" mask="url(#bm)"/>'
++'<circle cx="104" cy="198" r="2" fill="#e8d07a" fill-opacity="0.65"/>'
++'<circle cx="118" cy="178" r="1.2" fill="#c8a448" fill-opacity="0.45"/>'
++'<circle cx="248" cy="188" r="1.8" fill="#e8d07a" fill-opacity="0.6"/>'
++'<circle cx="263" cy="212" r="1" fill="#c8a448" fill-opacity="0.4"/>'
++'<circle cx="94" cy="292" r="1.4" fill="#c8a448" fill-opacity="0.45"/>'
++'<circle cx="260" cy="310" r="2" fill="#e8d07a" fill-opacity="0.55"/>'
++'<circle cx="136" cy="348" r="1.2" fill="#c8a448" fill-opacity="0.35"/>'
++'<circle cx="226" cy="156" r="1.2" fill="#c8a448" fill-opacity="0.4"/>'
++'<g stroke="#e8d07a" stroke-opacity="0.4" stroke-width="0.9">'
++'<line x1="104" y1="194" x2="104" y2="202"/><line x1="100" y1="198" x2="108" y2="198"/>'
++'<line x1="248" y1="184" x2="248" y2="192"/><line x1="244" y1="188" x2="252" y2="188"/>'
++'<line x1="260" y1="306" x2="260" y2="314"/><line x1="256" y1="310" x2="264" y2="310"/>'
++'</g>'
++'<line x1="55" y1="490" x2="295" y2="490" stroke="#c8a448" stroke-width="0.5" stroke-opacity="0.2"/>'
++'<circle cx="175" cy="490" r="2.5" fill="#c8a448" fill-opacity="0.3"/>'
++'<line x1="128" y1="546" x2="222" y2="546" stroke="#c8a448" stroke-width="0.4" stroke-opacity="0.22"/>'
++'</svg>';
+
+/* Header moon SVG — injected on load for visual consistency with card back */
+(function injectHeaderMoon(){
+  var el=document.getElementById('logoMoon');
+  if(!el)return;
+  el.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">'
+    +'<defs>'
+    +'<radialGradient id="hmg" cx="35%" cy="35%" r="65%">'
+    +'<stop offset="0%" stop-color="#f6ecb4" stop-opacity="0.95"/>'
+    +'<stop offset="60%" stop-color="#e8d07a" stop-opacity="0.7"/>'
+    +'<stop offset="100%" stop-color="#c8a448" stop-opacity="0.3"/>'
+    +'</radialGradient>'
+    +'<mask id="hm"><circle cx="38" cy="40" r="26" fill="white"/><circle cx="52" cy="30" r="21" fill="black"/></mask>'
+    +'</defs>'
+    +'<circle cx="38" cy="40" r="34" fill="#c8a448" fill-opacity="0.04"/>'
+    +'<circle cx="38" cy="40" r="29" fill="#c8a448" fill-opacity="0.04"/>'
+    +'<circle cx="38" cy="40" r="26" fill="url(#hmg)" mask="url(#hm)"/>'
+    +'<circle cx="38" cy="40" r="26" fill="none" stroke="#e8d07a" stroke-width="1" stroke-opacity="0.65" mask="url(#hm)"/>'
+    +'<circle cx="14" cy="20" r="1.8" fill="#e8d07a" fill-opacity="0.7"/>'
+    +'<circle cx="64" cy="16" r="1.2" fill="#e8d07a" fill-opacity="0.6"/>'
+    +'<circle cx="8" cy="54" r="1.2" fill="#e8d07a" fill-opacity="0.5"/>'
+    +'<circle cx="70" cy="60" r="1.8" fill="#e8d07a" fill-opacity="0.65"/>'
+    +'<circle cx="22" cy="68" r="1" fill="#e8d07a" fill-opacity="0.45"/>'
+    +'<g stroke="#e8d07a" stroke-opacity="0.5" stroke-width="0.9">'
+    +'<line x1="14" y1="16" x2="14" y2="24"/><line x1="10" y1="20" x2="18" y2="20"/>'
+    +'<line x1="70" y1="56" x2="70" y2="64"/><line x1="66" y1="60" x2="74" y2="60"/>'
+    +'</g>'
+    +'</svg>';
+})();
+
+function makeImg(card,cls){
+  try{
+
+  var isRev=cls&&cls.indexOf('REV')>-1;
+  var url=cardImgUrl(card);
+
+  var img=document.createElement('img');
+  img.alt=cardName(card);
+  img.loading='lazy'; /* 뷰포트 밖 이미지 지연 로딩 */
+  img.crossOrigin='anonymous';
+  img.style.cssText='width:100%;height:100%;object-fit:cover;display:block'
+    +(isRev?';transform:rotate(180deg)':'');
+
+  /* 이미지 로드 실패 시 수트별 색상 플레이스홀더 표시 */
+  img.onerror=function(){
+    var colors={
+      'major':     ['#1a0840','#3a1870'], /* 메이저 아르카나: 보라 */
+      'wands':     ['#3a1200','#6a2800'], /* 완드: 불꽃 오렌지 */
+      'cups':      ['#001840','#003070'], /* 컵: 물 파랑 */
+      'swords':    ['#181828','#303048'], /* 소드: 대기 실버 */
+      'pentacles': ['#0a1e00','#183200']  /* 펜타클: 대지 초록 */
+    };
+    var c=colors[card.type==='major'?'major':card.suitCode]||colors['major'];
+    var ph=document.createElement('div');
+    ph.style.cssText='width:100%;height:100%;display:flex;flex-direction:column;'
+      +'align-items:center;justify-content:center;padding:8px;'
+      +'background:linear-gradient(145deg,'+c[0]+','+c[1]+');'
+      +'color:#c8a448;gap:8px;text-align:center';
+    var num=document.createElement('div');
+    num.style.cssText='font-family:serif;font-size:1.4rem;opacity:.8';
+    num.textContent=card.number||'';
+    var nm=document.createElement('div');
+    nm.style.cssText='font-size:.62rem;letter-spacing:.06em;opacity:.85;line-height:1.4;word-break:keep-all';
+    nm.textContent=cardName(card);
+    ph.appendChild(num);ph.appendChild(nm);
+    if(img.parentNode)img.parentNode.replaceChild(ph,img);
+  };
+  img.src=url;
+  return img;
+  }catch(e){logger.error('카드 이미지 생성 오류:',e);}
+}
+
+/* Card back element for track cards */
+function makeBackSVG(){
+  var div=document.createElement('div');
+  div.style.cssText='width:100%;height:100%;overflow:hidden';
+  div.innerHTML=CARD_BACK_SVG;
+  var svg=div.querySelector('svg');
+  if(svg)svg.style.cssText='width:100%;height:100%;display:block';
+  return div;
+}
+
+/* ═══ SPREADS ═══ */
+var SP=window.LOCALE.spreads;
+
+/* ── spread preview (step2) ── */
+function buildPreview(n,pos){
+  /* helper */
+  function sl(i){return '<div class="smc"><div class="sms">'+(i+1)+'</div><div class="sml">'+pos[i]+'</div></div>';}
+  function bl(){return '<span class="smb"></span>';}
+  var H='<div class="sp-map">';
+  if(n===1){
+    H+='<div style="display:flex;justify-content:center">'+sl(0)+'</div>';
+  } else if(n===3){
+    H+='<div style="display:flex;gap:4px">'+sl(0)+sl(1)+sl(2)+'</div>';
+  } else if(n===5){
+    /* _2_ / 415 / _3_ */
+    H+='<div style="display:inline-grid;grid-template-columns:repeat(3,38px);gap:4px;align-items:start">';
+    H+=bl()+sl(1)+bl()+sl(3)+sl(0)+sl(4)+bl()+sl(2)+bl();
+    H+='</div>';
+  } else if(n===7){
+    /* Star of David preview
+       slot height = sms(46) + gap(2) + sml(22) = 70px
+       rowStep=58px (overlapping slightly is ok since sml is clipped)
+       colStep=42px, container width = 42*2+38 = 122px
+       container height = 58*2 + 70 = 206px */
+    var CS7=42,RS7=68; /* colStep=42, rowStep=68 (slot 46+22+gap) */
+    H+='<div style="position:relative;width:122px;height:'+(RS7*2+70)+'px;margin:0 auto">';
+    function sp7(col,row,i){
+      var L=col*CS7, T=Math.round(row*RS7);
+      return '<div class="smc" style="position:absolute;left:'+L+'px;top:'+T+'px">'+
+             '<div class="sms">'+(i+1)+'</div>'+
+             '<div class="sml">'+pos[i]+'</div></div>';
+    }
+    H+=sp7(1,0,   0);
+    H+=sp7(0,0.5, 4);
+    H+=sp7(2,0.5, 5);
+    H+=sp7(1,1,   6);
+    H+=sp7(0,1.5, 2);
+    H+=sp7(2,1.5, 1);
+    H+=sp7(1,2,   3);
+    H+='</div>';
+  } else if(n===10){
+    /* r0: _  5  _  _  10
+       r1: 3  1  2  4   9
+       r2: _  6  _  _   8
+       r3: _  _  _  _   7   */
+    H+='<div style="display:inline-grid;grid-template-columns:repeat(5,38px);gap:3px;align-items:start">';
+    H+=bl()+sl(4)+bl()+bl()+sl(9);   /* r0 */
+    H+=sl(2)+sl(0)+sl(1)+sl(3)+sl(8); /* r1 */
+    H+=bl()+sl(5)+bl()+bl()+sl(7);   /* r2 */
+    H+=bl()+bl()+bl()+bl()+sl(6);    /* r3 */
+    H+='</div>';
+  }
+  H+='</div>';
+  return H;
+}
+
+/* ── NORU 네임스페이스 — 설정 및 상수 ──
+   향후 모든 전역 변수를 window.NORU 아래로 통합 예정
+   현재: NORU.anim 분리 완료, 나머지는 점진적 마이그레이션 ── */
+window.NORU = window.NORU || {};
+
+/* 애니메이션 딜레이 상수 (ms) */
+var ANIM = window.NORU.anim = {
+  SHUFFLE: 1800,   /* 셔플 오버레이 표시 시간 */
+  REVEAL:  1550,   /* 카드 공개 오버레이 시간 */
+  BIRTH:   1400,   /* 탄생카드 로딩 시간 */
+  SCROLL:  340,    /* 카드 트랙 스크롤 이동 */
+  ARR_UPD: 120     /* 화살표 상태 업데이트 딜레이 */
+};
+
+/* ═══ CARD DATA ═══
+   전역 변수들은 향후 NORU 네임스페이스로 통합 예정
+   현재: window.LOCALE, WIKI_MAJ, WIKI_MINOR, S, MAJ, MIN, ALL 등 ═══ */
+var MAJ=window.LOCALE.major;
+
+var SDS=window.LOCALE.suits;
+var NK=window.LOCALE.numbers;
+/* 마이너 아르카나 56장 — 수트×숫자별 고유 해석 텍스트 */
+var MINOR_DATA=window.LOCALE.minorData;
+
+function buildMinor(){
+  var c=[],id=MAJ.length; /* MAJ 다음 ID부터 시작 — 0~21 이후 */
+  SDS.forEach(function(s){
+    NK.forEach(function(num,ni){
+      /* 언어 독립적 키: 'wands.ace', 'cups.king' 등 */
+      var key=s.code+'.'+num.code;
+      var fb=window.LOCALE.ui.minorFallback||{};
+      var d=MINOR_DATA[key]||{
+        /* 데이터 없을 경우 locale의 fallback 템플릿 사용 */
+        up:(fb.up||'{suit}({elem})의 에너지가 {num}의 의미와 결합됩니다. {theme}의 영역에서 중요한 메시지를 담고 있습니다.')
+           .replace('{suit}',s.n).replace('{elem}',s.e).replace('{num}',num.label).replace('{theme}',s.t),
+        rv:(fb.rv||'{suit}의 에너지가 막히거나 과도하게 흐르고 있습니다.')
+           .replace('{suit}',s.n),
+        lv:(fb.lv||'{elem}의 에너지가 관계에 영향을 줍니다.')
+           .replace('{elem}',s.e),
+        ca:(fb.ca||'{theme}의 에너지를 직업적으로 활용할 때입니다.')
+           .replace('{theme}',s.t)
+      };
+      var kws=[s.e,s.n,num.label];
+      /* name/number는 런타임에 locale에서 조합
+             suitCode/numCode만 카드 객체에 저장 */
+      c.push({id:id++,type:'minor',
+              suitCode:s.code,numCode:num.code,
+              keywords:kws,up:d.up,rv:d.rv,lv:d.lv,ca:d.ca});
+    });
+  });
+  return c;
+}
+var MIN=buildMinor();
+var ALL=MAJ.concat(MIN);
+
+/* ═══ BIRTH PAIRS ═══ */
+var BP=window.LOCALE.birthPairs;
+
+/* ═══ STATE ═══ */
+
+/* ── 에러 토스트 — 사용자에게 시각적 알림 ── */
+var _toastTimer=null;
+function showToast(msg, duration){
+  var el=document.getElementById('toast');
+  if(!el)return;
+  el.textContent=msg;
+  el.classList.add('ON');
+  if(_toastTimer)clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){el.classList.remove('ON');},duration||3000);
+}
+/* ── 로거 유틸 — 개발 환경에서만 출력 (localhost / 127.0.0.1) ──
+   프로덕션(HTTPS 배포)에서는 console 출력이 완전히 억제됩니다 */
+var _DEV = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+var logger = {
+  error: function(msg, err) { if(_DEV) logger.error('[NORU]', msg, err||''); },
+  log:   function(msg, val) { if(_DEV) console.log('[NORU]', msg, val||''); }
+};
+
+/* ── 카드 크기 상수 — CSS :root 변수에서 읽어서 동기화 ──
+   --cw: 카드 너비, --ch: 카드 높이
+   JS 레이아웃(매직세븐 등)이 CSS와 항상 일치하도록 CSS에서 파싱 */
+var ROOT=getComputedStyle(document.documentElement);
+var CARD_W=parseInt(ROOT.getPropertyValue('--cw'))||100; /* 카드 너비 px */
+var CARD_H=parseInt(ROOT.getPropertyValue('--ch'))||170; /* 카드 높이 px */
+/* 매직세븐 레이아웃 상수 — CSS 카드 크기 기반 계산 */
+var M7_CS=CARD_W+20;      /* 열 간격: 카드너비 + 여백 */
+var M7_RS=CARD_H+40;      /* 행 간격: 카드높이 + 레이블공간 */
+var M7_W=M7_CS*2+CARD_W;  /* 컨테이너 너비: 3열 기준 */
+var M7_H=M7_RS*2+CARD_H+40; /* 컨테이너 높이: 3행 기준 */
+
+/* ── 카드 이름 헬퍼 — locale 기반으로 동적 생성 ──
+   메이저: LOCALE.major[card.id].name
+   마이너: LOCALE.ui.minorNameFmt 포맷 사용
+     ko: '{suit}의 {num}'  → '완드의 에이스'
+     en: '{num} of {suit}' → 'Ace of Wands'  */
+function cardName(card){
+  if(card.type==='major'){
+    var maj=window.LOCALE.major[card.id];
+    return maj?maj.name:'';
+  }
+  var suit=window.LOCALE.suits.find(function(s){return s.code===card.suitCode;});
+  var num=window.LOCALE.numbers.find(function(n){return n.code===card.numCode;});
+  if(!suit||!num) return '';
+  var fmt=window.LOCALE.ui.minorNameFmt||'{suit}의 {num}';
+  return fmt.replace('{suit}',suit.n).replace('{num}',num.label);
+}
+
+/* 앱 상태 — revProb: 역방향 확률 (0~1, 기본 0.5 = 전통 타로 50%) */
+var S=window.NORU.state={mode:'',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5};
+
+/* ═══ SHOW STEP ═══ */
+function show(id){
+  ['s0','s1','s2','s3','s4','s5'].forEach(function(s){
+    document.getElementById(s).classList.toggle('ON',s===id);
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═══ SPREAD INFO ═══ */
+function renderSpInfo(){
+  try{
+
+  var sp=SP[S.count];if(!sp)return;
+  var tags=sp.pos.map(function(p,i){return '<span class="sp-tag">'+(i+1)+'. '+p+'</span>';}).join('');
+  var el=document.getElementById('spInfo');
+  el.className='sp-info ON';
+  el.innerHTML='<h3>'+sp.title+'</h3><p>'+sp.desc+'</p><div class="sp-tags">'+tags+'</div>'+buildPreview(S.count,sp.pos);
+  }catch(e){logger.error('스프레드 정보 렌더링 오류:',e);}
+}
+
+/* ═══ MODE ═══ */
+/* inline onclick 대신 addEventListener로 등록 */
+document.getElementById('mT').addEventListener('click',function(){selMode('tarot');});
+document.getElementById('mB').addEventListener('click',function(){selMode('birth');});
+function selMode(m){
+  S.mode=m;
+  document.getElementById('mT').classList.toggle('SEL',m==='tarot');
+  document.getElementById('mB').classList.toggle('SEL',m==='birth');
+  show(m==='tarot'?'s1':'s5');
+}
+
+/* ═══ DECK ═══ */
+document.querySelectorAll('.dbtn').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.dbtn').forEach(function(x){
+      x.classList.remove('ON');
+      x.setAttribute('aria-checked','false');
+    });
+    b.classList.add('ON');
+    b.setAttribute('aria-checked','true');
+    S.deck=b.dataset.deck;
+  });
+});
+
+/* 역방향 확률 슬라이더 */
+document.getElementById('revSlider').addEventListener('input',function(){
+  S.revProb=parseInt(this.value)/100;
+  document.getElementById('revVal').textContent=this.value+'%';
+  this.setAttribute('aria-valuetext',this.value+'%');
+});
+document.querySelectorAll('.co').forEach(function(e){
+  e.addEventListener('click',function(){
+    document.querySelectorAll('.co').forEach(function(x){
+      x.classList.remove('ON');
+      x.setAttribute('aria-checked','false');
+    });
+    e.classList.add('ON');
+    e.setAttribute('aria-checked','true');
+    S.count=parseInt(e.dataset.n);
+    renderSpInfo();
+  });
+});
+
+/* ═══ BACK ═══ */
+document.getElementById('bk1').addEventListener('click',function(){show('s0');});
+document.getElementById('bk2').addEventListener('click',function(){show('s1');});
+document.getElementById('bk3').addEventListener('click',function(){
+  if(S.adding){S.adding=false;S.selected=[];show('s4');}
+  else{S.selected=[];S.shuffled=[];show('s2');}
+});
+document.getElementById('bk4').addEventListener('click',function(){
+  S.selected=[];
+  S.adding=false;
+  /* restore original shuffled deck (re-shuffle from same pool) */
+  var pool=(S.deck==='major'?MAJ:S.deck==='minor'?MIN:ALL).slice();
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
+  S.shuffled=pool.map(function(c){var o=Object.assign({},c);o.isRev=Math.random()<S.revProb;return o;});
+  document.getElementById('btnRev').className='btn-rev';
+  document.getElementById('btnRev').textContent='❆  선택한 카드 펼쳐보기  ❆';
+  document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
+  buildTrack();show('s3');
+});
+document.getElementById('bk5').addEventListener('click',function(){show('s0');});
+
+/* ═══ NAV ═══ */
+document.getElementById('toS2').addEventListener('click',function(){renderSpInfo();show('s2');});
+document.getElementById('toS3').addEventListener('click',doShuffle);
+
+/* ═══ RESET ═══ */
+function resetAll(){
+  /* 상태 완전 초기화 — revProb는 50%로 리셋 */
+  S={mode:'',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5};
+
+  /* 덱 버튼 */
+  document.querySelectorAll('.dbtn').forEach(function(b){b.classList.remove('ON');});
+  document.querySelector('.dbtn[data-deck="major"]').classList.add('ON');
+
+  /* 스프레드 카운트: 모두 OFF 후 1만 ON */
+  document.querySelectorAll('.co').forEach(function(e){e.classList.remove('ON');});
+  document.querySelector('.co[data-n="1"]').classList.add('ON');
+
+  /* 역방향 슬라이더 50%로 리셋 */
+  document.getElementById('revSlider').value=50;
+  document.getElementById('revVal').textContent='50%';
+
+  /* 스프레드 정보 패널 닫기 */
+  document.getElementById('spInfo').className='sp-info';
+  document.getElementById('spInfo').innerHTML='';
+
+  /* 카드 영역 */
+  document.getElementById('ctrack').innerHTML='';
+  document.getElementById('s4grid').innerHTML='';
+  document.getElementById('extraGrid').innerHTML='';
+  document.getElementById('extra').style.display='none';
+
+  /* 버튼 및 진행바 */
+  document.getElementById('btnRev').className='btn-rev';
+  document.getElementById('btnRev').textContent=window.LOCALE.ui.revealBtn;
+  document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
+  document.getElementById('btnMore').className='btn-more';
+  document.getElementById('pFill').style.width='0%';
+  document.getElementById('pTxt').textContent='0 / 0';
+
+  /* 모드 선택 */
+  document.getElementById('mT').classList.remove('SEL');
+  document.getElementById('mB').classList.remove('SEL');
+
+  /* 탄생카드 */
+  document.getElementById('birthRes').className='birth-res';
+  document.getElementById('birthRes').innerHTML='';
+  document.getElementById('bYear').value='';
+  document.getElementById('bMonth').value='';
+  document.getElementById('bDay').value='';
+
+  show('s0');
+}
+document.getElementById('rst4').addEventListener('click',resetAll);
+document.getElementById('rst5').addEventListener('click',resetAll);
+
+/* ═══ SHUFFLE ═══ */
+function doShuffle(){
+  var ov=document.getElementById('ovSh');ov.classList.add('ON');
+  setTimeout(function(){
+    try{
+      var pool=(S.deck==='major'?MAJ:S.deck==='minor'?MIN:ALL).slice();
+      for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
+      S.shuffled=pool.map(function(c){var o=Object.assign({},c);o.isRev=Math.random()<S.revProb;return o;});
+      S.selected=[];S.revealed=[];S.adding=false;
+      document.getElementById('btnRev').className='btn-rev';
+      document.getElementById('s4grid').innerHTML='';
+      document.getElementById('extraGrid').innerHTML='';
+      document.getElementById('extra').style.display='none';
+      buildTrack();show('s3');
+    } catch(e){
+      logger.error('셔플 오류:',e);
+      showToast(window.LOCALE&&window.LOCALE.ui.errorShuffle||'카드를 섞는 중 오류가 발생했습니다.');
+    } finally {
+      ov.classList.remove('ON');
+    }
+  },ANIM.SHUFFLE);
+}
+
+/* ═══ TRACK ═══ */
+function buildTrack(){
+  try{
+
+  /* adding 모드가 아닐 때만 선택 초기화 */
+  if(!S.adding){
+    S.selected=[];
+    document.getElementById('btnRev').className='btn-rev';
+    updProg();
+  }
+
+  var tr=document.getElementById('ctrack');
+  tr.innerHTML='';tr.scrollLeft=0;
+  S.shuffled.forEach(function(card,idx){
+    var el=document.createElement('div');el.className='dc';el.dataset.i=idx;
+    /* 카드 뒷면 SVG 삽입 */
+    var back=makeBackSVG();
+    back.style.cssText='position:absolute;inset:0;pointer-events:none';
+    el.style.position='relative';el.style.overflow='hidden';
+    el.appendChild(back);
+    var nu=document.createElement('span');nu.className='dc-n';
+    nu.style.cssText='position:absolute;bottom:6px;left:50%;transform:translateX(-50%);z-index:2';
+    nu.textContent='#'+('00'+(idx+1)).slice(-3);
+    el.appendChild(nu);
+    el.style.opacity='0';el.style.transform='translateY(10px)';
+    setTimeout(function(){
+      el.style.transition='opacity .28s,transform .28s,box-shadow .2s,border-color .2s';
+      el.style.opacity='1';el.style.transform='translateY(0)';
+    },15+idx*4);
+    el.addEventListener('click',function(){pick(idx,el);});
+    tr.appendChild(el);
+  });
+  setTimeout(updArr,ANIM.ARR_UPD);
+  }catch(e){logger.error('카드 트랙 빌드 오류:',e);}
+}
+
+/* 트랙 이벤트는 최초 1회만 등록 — buildTrack 외부에서 초기화 */
+(function initTrackEvents(){
+  var tr=document.getElementById('ctrack');
+  /* 휠 → 가로 스크롤 변환 */
+  tr.addEventListener('wheel',function(e){
+    if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
+      e.preventDefault();
+      tr.scrollBy({left:e.deltaY*2,behavior:'smooth'});
+      setTimeout(updArr,200);
+    }
+  },{passive:false});
+  /* 스크롤 시 화살표 상태 업데이트 */
+  tr.addEventListener('scroll',updArr);
+  /* 마우스 드래그 스크롤 */
+  setupDrag(tr);
+})();
+
+function pick(idx,el){
+  if(S.adding){
+    /* 추가 모드: 토글 선택, 최대 제한 없음 */
+    var p=S.selected.indexOf(idx);
+    if(p>-1){S.selected.splice(p,1);el.classList.remove('SEL');}
+    else{S.selected.push(idx);el.classList.add('SEL');}
+    var n=S.selected.length;
+    /* 1장 이상 선택 시 꽉 찬 느낌 */
+    var pct=n===0?0:100;
+    document.getElementById('pFill').style.width=pct+'%';
+    document.getElementById('pTxt').textContent=n+window.LOCALE.ui.cardCountSelected;
+    document.getElementById('btnRev').classList.toggle('ON',n>0);
+    return;
+  }
+  /* 일반 선택 모드 */
+  var p=S.selected.indexOf(idx);
+  if(p>-1){
+    /* 이미 선택된 카드 → 선택 해제 */
+    S.selected.splice(p,1);
+    el.classList.remove('SEL');
+  } else {
+    /* 아직 최대에 안 찼을 때만 새 카드 추가, 꽉 찼으면 무시 */
+    if(S.selected.length>=S.count) return;
+    S.selected.push(idx);
+    el.classList.add('SEL');
+  }
+  updProg();
+  document.getElementById('btnRev').classList.toggle('ON',S.selected.length===S.count);
+}
+function updProg(){
+  var pct=S.count>0?(S.selected.length/S.count)*100:0;
+  document.getElementById('pFill').style.width=pct+'%';
+  document.getElementById('pTxt').textContent=S.selected.length+' / '+S.count;
+  /* 진행바 aria-valuenow 동적 업데이트 */
+  var pb=document.querySelector('[role="progressbar"]');
+  if(pb)pb.setAttribute('aria-valuenow',Math.round(pct));
+}
+document.getElementById('arrL').addEventListener('click',function(){scrollTr(-1);});
+document.getElementById('arrR').addEventListener('click',function(){scrollTr(1);});
+function scrollTr(d){
+  var t=document.getElementById('ctrack');
+  t.scrollBy({left:d*340,behavior:'smooth'});setTimeout(updArr,ANIM.SCROLL);
+}
+function updArr(){
+  var t=document.getElementById('ctrack'),L=document.getElementById('arrL'),R=document.getElementById('arrR');
+  if(!t)return;
+  L.classList.toggle('H',t.scrollLeft<=3);
+  R.classList.toggle('H',t.scrollLeft+t.clientWidth>=t.scrollWidth-3);
+}
+/* 마우스 + 터치 드래그 스크롤 */
+function setupDrag(tr){
+  var dn=false,sx=0,sl=0,dr=false;
+
+  /* 마우스 이벤트 */
+  tr.addEventListener('mousedown',function(e){dn=true;dr=false;sx=e.pageX-tr.offsetLeft;sl=tr.scrollLeft;tr.style.cursor='grabbing';});
+  document.addEventListener('mouseup',function(){dn=false;tr.style.cursor='grab';});
+  tr.addEventListener('mousemove',function(e){
+    if(!dn)return;e.preventDefault();
+    var dx=(e.pageX-tr.offsetLeft)-sx;if(Math.abs(dx)>4)dr=true;
+    tr.scrollLeft=sl-dx*1.3;updArr();
+  });
+  tr.addEventListener('click',function(e){if(dr){e.stopPropagation();dr=false;}},true);
+
+  /* 터치 이벤트 — 모바일 드래그 지원 */
+  tr.addEventListener('touchstart',function(e){
+    dn=true;dr=false;
+    sx=e.touches[0].pageX-tr.offsetLeft;sl=tr.scrollLeft;
+  },{passive:true});
+  tr.addEventListener('touchend',function(){dn=false;});
+  tr.addEventListener('touchmove',function(e){
+    if(!dn)return;
+    var dx=(e.touches[0].pageX-tr.offsetLeft)-sx;
+    if(Math.abs(dx)>4)dr=true;
+    tr.scrollLeft=sl-dx*1.3;updArr();
+  },{passive:true});
+}
+
+/* ═══ REVEAL ═══ */
+document.getElementById('btnRev').addEventListener('click',function(){
+  if(S.adding){
+    if(!S.selected.length)return;
+    var nc=S.selected.map(function(i){return S.shuffled[i];});
+    var base=S.revealed.length;
+    nc.forEach(function(c){S.revealed.push(c);});
+    S.adding=false;S.selected=[];
+    document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
+    document.getElementById('btnRev').textContent='❆  선택한 카드 펼쳐보기  ❆';
+    var ex=document.getElementById('extra');ex.style.display='block';
+    var eg=document.getElementById('extraGrid');
+    nc.forEach(function(c,i){eg.appendChild(mkCard(c,'추가 #'+(base+i-SP[S.count].pos.length+1),base+i));});
+    show('s4');refreshMore();
+    setTimeout(function(){ex.scrollIntoView({behavior:'smooth',block:'nearest'});},200);
+  } else {
+    if(S.selected.length<S.count)return;
+    var ov=document.getElementById('ovRv');ov.classList.add('ON');
+    setTimeout(function(){ov.classList.remove('ON');doReveal();},ANIM.REVEAL);
+  }
+});
+
+/* ═══ DO REVEAL ═══ */
+function doReveal(){
+  try{
+
+  S.revealed=S.selected.map(function(i){return S.shuffled[i];});
+  var sp=SP[S.count];
+  document.getElementById('s4title').textContent=sp.title;
+  document.getElementById('s4desc').textContent=sp.desc;
+  var g=document.getElementById('s4grid');g.innerHTML='';
+  buildGrid(S.revealed,sp,g);
+  show('s4');refreshMore();
+  }catch(e){logger.error('카드 공개 오류:',e);
+  showToast(window.LOCALE&&window.LOCALE.ui.errorReveal||'카드를 공개하는 중 오류가 발생했습니다.');}
+}
+
+/* ═══ BUILD RESULT GRID ═══ */
+function buildGrid(cards,sp,con){
+  try{
+
+  var L=sp.lay;
+
+  if(L==='flex'){
+    var row=document.createElement('div');row.className='rg-flex';
+    cards.forEach(function(c,i){row.appendChild(mkCard(c,sp.pos[i]||'',i));});
+    con.appendChild(row);
+    return;
+  }
+
+  if(L==='cross5'){
+    /* 3×3 grid:
+       _ 2 _
+       4 1 5
+       _ 3 _  */
+    var g=document.createElement('div');g.className='rg-cross';
+    var bl=blankPC.bind(null,false);
+    g.appendChild(bl());g.appendChild(mkCard(cards[1],sp.pos[1],1));g.appendChild(bl());
+    g.appendChild(mkCard(cards[3],sp.pos[3],3));
+    g.appendChild(mkCard(cards[0],sp.pos[0],0));
+    g.appendChild(mkCard(cards[4],sp.pos[4],4));
+    g.appendChild(bl());g.appendChild(mkCard(cards[2],sp.pos[2],2));g.appendChild(bl());
+    con.appendChild(g);
+    return;
+  }
+
+  if(L==='seven'){
+    /*  Star of David (육망성) layout
+        colStep=120px, rowStep=208px (card 170 + label 38)
+        Positions:
+          1 → col=1, row=0       center top
+          5 → col=0, row=0.5     left,  halfway between 1 and 7
+          6 → col=2, row=0.5     right, halfway between 1 and 7
+          7 → col=1, row=1       center middle
+          3 → col=0, row=1.5     left,  halfway between 7 and 4
+          2 → col=2, row=1.5     right, halfway between 7 and 4
+          4 → col=1, row=2       center bottom
+    */
+    var g=document.createElement('div');g.className='rg-7';
+    /* CSS --cw/--ch 기반으로 계산된 전역 상수 사용 */
+    var CS=M7_CS,RS=M7_RS;
+    g.style.width=M7_W+'px';
+    g.style.height=M7_H+'px';
+    var pos7=[
+      [0, 1, 0  ],  /* 1: center top */
+      [4, 0, 0.5],  /* 5: left  upper-mid */
+      [5, 2, 0.5],  /* 6: right upper-mid */
+      [6, 1, 1  ],  /* 7: center middle */
+      [2, 0, 1.5],  /* 3: left  lower-mid */
+      [1, 2, 1.5],  /* 2: right lower-mid */
+      [3, 1, 2  ]   /* 4: center bottom */
+    ];
+    pos7.forEach(function(p){
+      var cardIdx=p[0],col=p[1],row=p[2];
+      var pc=mkCard(cards[cardIdx],sp.pos[cardIdx],cardIdx);
+      pc.style.position='absolute';
+      pc.style.left=(col*CS)+'px';
+      pc.style.top=(row*RS)+'px';
+      g.appendChild(pc);
+    });
+    con.appendChild(g);
+    return;
+  }
+
+  if(L==='celtic'){
+    /* 5-column grid:
+       r0: _  5  _  _  10
+       r1: 3  1  2  4   9
+       r2: _  6  _  _   8
+       r3: _  _  _  _   7   */
+    var g=document.createElement('div');g.className='rg-cc';
+    var bl=blankPC.bind(null,true);
+    /* r0: _ 5 _ _ 10 */
+    g.appendChild(bl());
+    g.appendChild(mkCard(cards[4],sp.pos[4],4,true));
+    g.appendChild(bl());g.appendChild(bl());
+    g.appendChild(mkCard(cards[9],sp.pos[9],9,true));
+    /* r1: 3 1 2 4 9 */
+    g.appendChild(mkCard(cards[2],sp.pos[2],2,true));
+    g.appendChild(mkCard(cards[0],sp.pos[0],0,true));
+    g.appendChild(mkCard(cards[1],sp.pos[1],1,true));
+    g.appendChild(mkCard(cards[3],sp.pos[3],3,true));
+    g.appendChild(mkCard(cards[8],sp.pos[8],8,true));
+    /* r2: _ 6 _ _ 8 */
+    g.appendChild(bl());
+    g.appendChild(mkCard(cards[5],sp.pos[5],5,true));
+    g.appendChild(bl());g.appendChild(bl());
+    g.appendChild(mkCard(cards[7],sp.pos[7],7,true));
+    /* r3: _ _ _ _ 7 */
+    g.appendChild(bl());g.appendChild(bl());g.appendChild(bl());g.appendChild(bl());
+    g.appendChild(mkCard(cards[6],sp.pos[6],6,true));
+    con.appendChild(g);
+    return;
+  }
+  }catch(e){logger.error('결과 그리드 렌더링 오류:',e);
+  showToast(window.LOCALE&&window.LOCALE.ui.errorGrid||'결과를 표시하는 중 오류가 발생했습니다.');}
+}
+
+/* blank placeholder — cc=true 이면 켈틱크로스용 aspect-ratio 방식 */
+function blankPC(cc){
+  var d=document.createElement('div');
+  d.className='pc-blank';
+  if(cc)d.style.cssText='width:100%;height:0;padding-bottom:172%;visibility:hidden';
+  return d;
+}
+
+/* 카드 렌더링 — cc:true 이면 켈틱크로스용 1fr 컬럼 방식 (aspect-ratio)
+   lbl: 위치 레이블 텍스트, idx: 0-based 인덱스 */
+function mkCard(card,lbl,idx,cc){
+  try{
+
+  var el=document.createElement('div');
+  el.className='pc';
+  if(cc) el.style.width='100%';
+
+  var frame=document.createElement('div');
+  frame.className='pc-frame';
+  if(cc){
+    /* 켈틱크로스: 1fr 컬럼에 맞게 aspect-ratio로 높이 유지 */
+    frame.style.cssText='width:100%;height:0;padding-bottom:172%;position:relative;'
+      +'overflow:hidden;border-radius:8px;border:2px solid rgba(200,164,72,.32);'
+      +'background:var(--card-bg3);transition:all .25s';
+    var img=makeImg(card,card.isRev?'REV':'');
+    img.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block';
+    if(card.isRev) img.style.transform='rotate(180deg)';
+    frame.appendChild(img);
+  } else {
+    /* 일반: CSS --cw/--ch 고정 크기 */
+    frame.appendChild(makeImg(card,card.isRev?'REV':''));
+  }
+
+  /* 레이블 — "1. 현재 상황 · 역" 형식 */
+  var numPrefix=typeof idx==='number'?(idx+1)+'. ':'';
+  var revSuffix=card.isRev?' · '+window.LOCALE.ui.reversedShort:'';
+  var plbl=document.createElement('div');plbl.className='pc-lbl';
+  if(cc) plbl.style.fontSize='.5rem';
+  plbl.textContent=numPrefix+(lbl||'카드 '+(idx+1))+revSuffix;
+  if(card.isRev) plbl.style.color='var(--acc)';
+
+  var pnm=document.createElement('div');pnm.className='pc-name';
+  if(cc) pnm.style.fontSize='.6rem';
+  pnm.textContent=cardName(card);
+
+  el.appendChild(frame);el.appendChild(plbl);el.appendChild(pnm);
+  el.addEventListener('click',function(){openModal(card);});
+
+  /* 등장 애니메이션: 카드 슬라이드업 + 프레임 3D 뒤집기 순차 실행 */
+  var delay=Math.min(idx,8)*80;
+  el.style.cssText+='opacity:0;transform:translateY(18px)';
+  setTimeout(function(){
+    el.style.transition='opacity .35s ease,transform .35s ease';
+    el.style.opacity='1';
+    el.style.transform='translateY(0)';
+    /* 슬라이드 완료 후 flip 시작 */
+    setTimeout(function(){
+      frame.classList.add('flip-in');
+    },120);
+  },delay);
+  return el;
+  }catch(e){logger.error('카드 생성 오류:',e);return el;}
+}
+
+/* ═══ ADD MORE ═══ */
+function getRemaining(){
+  var used={};S.revealed.forEach(function(c){used[c.id]=true;});
+  return(S.deck==='major'?MAJ:S.deck==='minor'?MIN:ALL).filter(function(c){return !used[c.id];});
+}
+function refreshMore(){
+  document.getElementById('btnMore').classList.toggle('ON',getRemaining().length>0);
+}
+document.getElementById('btnMore').addEventListener('click',function(){
+  var pool=getRemaining();if(!pool.length)return;
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
+  S.shuffled=pool.map(function(c){var o=Object.assign({},c);o.isRev=Math.random()<S.revProb;return o;});
+  S.adding=true;
+  S.selected=[];
+  /* explicitly reset UI state for add-more mode */
+  document.getElementById('pFill').style.width='0%';
+  document.getElementById('pTxt').textContent='0장 선택';
+  document.getElementById('btnRev').className='btn-rev'; /* hidden until card picked */
+  document.getElementById('btnRev').textContent='❆  결과에 추가하기  ❆';
+  document.getElementById('hint').innerHTML=window.LOCALE.ui.hintAdd;
+  buildTrack();
+  show('s3');
+});
+
+/* ═══ BIRTH CARD CALCULATOR ═══
+   Formula (from image):
+   mm + dd + yy + yy   (yy = century, yy = last2)
+   If 3-digit sum: take first two digits + third  →  first birth card (10-21)
+   If 2-digit sum:  digit sum  →  first birth card (10-21)
+   Second birth card = digit sum of first birth card
+   Special: first=19 → three cards 19,10,1
+═══════════════════════════════ */
+(function initBirthSelects(){
+  var ySel=document.getElementById('bYear');
+  var mSel=document.getElementById('bMonth');
+  var dSel=document.getElementById('bDay');
+  ySel.innerHTML='<option value="">연도</option>';
+  var thisYear=new Date().getFullYear();
+  for(var y=thisYear;y>=1924;y--){
+    var op=document.createElement('option');op.value=y;op.textContent=y+'년';ySel.appendChild(op);
+  }
+  function updateDays(){
+    var m=parseInt(mSel.value)||0,yr=parseInt(ySel.value)||2000,prev=parseInt(dSel.value)||0;
+    var maxD=31;
+    if(m){
+      if([4,6,9,11].indexOf(m)>-1)maxD=30;
+      else if(m===2)maxD=(yr%4===0&&(yr%100!==0||yr%400===0))?29:28;
+    }
+    dSel.innerHTML='<option value="">일</option>';
+    for(var d=1;d<=maxD;d++){
+      var op=document.createElement('option');op.value=d;op.textContent=d+'일';
+      if(d===prev)op.selected=true;dSel.appendChild(op);
+    }
+  }
+  mSel.addEventListener('change',updateDays);
+  ySel.addEventListener('change',updateDays);
+  updateDays();
+})();
+
+document.getElementById('calcBtn').addEventListener('click',function(){
+  var yr=parseInt(document.getElementById('bYear').value)||0;
+  var mo=parseInt(document.getElementById('bMonth').value)||0;
+  var dy=parseInt(document.getElementById('bDay').value)||0;
+  var res=document.getElementById('birthRes');
+  if(!yr||!mo||!dy){
+    res.innerHTML='<p style="color:var(--acc);text-align:center;font-size:.85rem;padding:12px">'+window.LOCALE.ui.birthError+'</p>';
+    res.className='birth-res ON';return;
+  }
+  /* show loading overlay (same as reveal) */
+  var ov=document.getElementById('ovRv');
+  ov.classList.add('ON');
+  setTimeout(function(){
+    ov.classList.remove('ON');
+    try{
+      /* mm + dd + cc + yy */
+      var mm=mo, dd=dy, cc=Math.floor(yr/100), yy=yr%100;
+      if(isNaN(mm+dd+cc+yy)) throw new Error('날짜 값이 올바르지 않습니다.');
+      var total=mm+dd+cc+yy;
+      /* 21 이하로 줄이기 */
+      var first=total;
+      while(first>21){
+        var s=String(first);
+        if(s.length>=3){first=parseInt(s.slice(0,2))+parseInt(s.slice(2));}
+        else{first=Math.floor(first/10)+(first%10);}
+      }
+      /* 두 번째 카드 = 자릿수 합 */
+      var second=Math.floor(first/10)+(first%10);
+      if(second===0||second===first)second=first%10||first;
+      var bp=BP[first]||{c:[first,second],d:'두 카드의 에너지가 함께합니다.'};
+      renderBirth(bp);
+    } catch(e){
+      logger.error('탄생카드 계산 오류:',e);
+      var res=document.getElementById('birthRes');
+      res.innerHTML='<p style="color:var(--acc);text-align:center;padding:12px;font-size:.85rem">'+window.LOCALE.ui.birthCalcError+'</p>';
+      res.className='birth-res ON';
+    }
+  },ANIM.BIRTH);
+});
+
+function renderBirth(bp){
+  var res=document.getElementById('birthRes');
+  try{
+    var cards=bp.c.map(function(id){return MAJ[id];}).filter(Boolean);
+    if(!cards.length) throw new Error('카드 데이터를 찾을 수 없습니다.');
+
+  var H='';
+  if(bp.trio)H+='<div class="trio-note">'+window.LOCALE.ui.birthTrioNote+'</div>';
+  H+='<div class="birth-cards">';
+  cards.forEach(function(c,i){
+    H+='<div class="pc" id="bpc'+i+'" style="cursor:pointer">';
+    H+='<div class="pc-frame" id="bpf'+i+'"></div>';
+    H+='<div class="pc-lbl">'+(window.LOCALE.ui.majorNumPrefix||'No.')+c.number+'</div>';
+    H+='<div class="pc-name">'+c.name+'</div>';
+    H+='</div>';
+  });
+  H+='</div>';
+  H+='<div class="birth-desc-box"><h4>'+window.LOCALE.ui.birthDescTitle+'</h4><p>'+bp.d+'</p></div>';
+  res.innerHTML=H;res.className='birth-res ON';
+  cards.forEach(function(c,i){
+    var f=document.getElementById('bpf'+i);if(!f)return;
+    f.appendChild(makeImg(c,''));
+    var w=document.getElementById('bpc'+i);
+    if(w)(function(card){
+      /* 클릭 → 모달, 이미지 클릭 → 확대 */
+      w.addEventListener('click',function(){openModal(card);});
+      var frame=w.querySelector('.pc-frame');
+      if(frame){
+        frame.style.cursor='zoom-in';
+        frame.addEventListener('click',function(e){
+          e.stopPropagation();
+          openImgZoom(card);
+        });
+      }
+    })(c);
+  });
+  }catch(e){
+    logger.error('탄생카드 렌더링 오류:',e);
+    res.innerHTML='<p style="color:var(--acc);text-align:center;padding:12px">표시 중 오류가 발생했습니다.</p>';
+    res.className='birth-res ON';
+  }
+}
+
+/* ═══ MODAL ═══ */
+function openModal(card){
+  try{
+  var full=ALL.find(function(c){return c.id===card.id;})||card;
+  var box=document.getElementById('mImgBox');box.innerHTML='';
+  /* create a fixed-size wrapper for the SVG card art */
+  var wrap=document.createElement('div');
+  wrap.style.cssText='width:120px;height:205px;border-radius:9px;overflow:hidden;'
+    +'border:2px solid rgba(200,164,72,.38);flex-shrink:0;'
+    +(card.isRev?'transform:rotate(180deg)':'');
+  var artDiv=makeImg(card,'');
+  wrap.appendChild(artDiv);
+  /* 이미지 클릭 시 확대 팝업 */
+  wrap.addEventListener('click',function(e){
+    e.stopPropagation();
+    openImgZoom(card);
+  });
+  box.appendChild(wrap);
+  document.getElementById('mArc').textContent=full.type==='major'
+    ? window.LOCALE.ui.modalArcMajor+' · '+(window.LOCALE.ui.majorNumPrefix||'No.')+full.number
+    : window.LOCALE.ui.modalArcMinor+' · '+(full.suit||'');
+  document.getElementById('mName').textContent=cardName(full);
+  var rt=document.getElementById('mRevTag');rt.innerHTML='';
+  if(card.isRev){var sp=document.createElement('span');sp.className='m-rev';sp.textContent=window.LOCALE.ui.modalReversed;rt.appendChild(sp);}
+  var kw=document.getElementById('mKws');kw.innerHTML='';
+  full.keywords.forEach(function(k){var e=document.createElement('span');e.className='kw';e.textContent=k;kw.appendChild(e);});
+
+  /* 모달 본문 — innerHTML 대신 DOM API로 구성 */
+  var L=window.LOCALE.ui;
+  var body=document.getElementById('mBody');
+  body.innerHTML='';
+
+  function _sec(titleTxt){
+    var s=document.createElement('div');s.className='m-sec';
+    var t=document.createElement('div');t.className='m-sec-t';t.textContent=titleTxt;
+    s.appendChild(t);return s;
+  }
+  function _p(txt){var p=document.createElement('p');p.textContent=txt;return p;}
+
+  /* 정방향/역방향 해석 */
+  var uprvSec=_sec(card.isRev?L.modalSectionReversed:L.modalSectionUpright);
+  var hl=document.createElement('div');hl.className='m-hl';
+  hl.appendChild(_p(card.isRev?full.rv:full.up));
+  uprvSec.appendChild(hl);
+  if(!card.isRev&&full.rv){
+    var rvNote=document.createElement('div');rvNote.className='m-rv-note';
+    var em=document.createElement('em');em.textContent=L.modalReversedPrefix+' ';
+    rvNote.appendChild(em);
+    rvNote.appendChild(document.createTextNode(full.rv));
+    uprvSec.appendChild(rvNote);
+  }
+  body.appendChild(uprvSec);
+
+  /* 연애 섹션 */
+  var lvSec=_sec(L.modalSectionLove);lvSec.appendChild(_p(full.lv||''));body.appendChild(lvSec);
+  /* 직업 섹션 */
+  var caSec=_sec(L.modalSectionCareer);caSec.appendChild(_p(full.ca||''));body.appendChild(caSec);
+  document.getElementById('mbg').classList.add('OPEN');
+  document.body.style.overflow='hidden';
+  /* 포커스 트랩: 이전 포커스 저장 후 닫기 버튼으로 이동 */
+  _modalPrevFocus=document.activeElement;
+  setTimeout(function(){
+    var closeBtn=document.getElementById('mClose');
+    if(closeBtn) closeBtn.focus();
+  },50);
+  }catch(e){
+    logger.error('모달 오류:',e);
+  }
+}
+
+/* 모달이 열려있을 때 Tab 포커스를 모달 안으로 가두기 */
+document.getElementById('mbg').addEventListener('keydown',function(e){
+  if(!this.classList.contains('OPEN')) return;
+  if(e.key!=='Tab') return;
+  var focusable=this.querySelectorAll(
+    'button,a,[href],[tabindex]:not([tabindex="-1"]),[role="button"]'
+  );
+  var first=focusable[0], last=focusable[focusable.length-1];
+  if(e.shiftKey){ if(document.activeElement===first){e.preventDefault();last.focus();} }
+  else          { if(document.activeElement===last) {e.preventDefault();first.focus();} }
+});
+
+document.getElementById('mbg').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('mClose').addEventListener('click',closeModal);
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    if(document.getElementById('imgZoom').classList.contains('OPEN'))closeImgZoom();
+    else closeModal();
+  }
+});
+
+var _modalPrevFocus=null; /* 모달 열기 전 포커스 저장용 */
+function closeModal(){
+  document.getElementById('mbg').classList.remove('OPEN');
+  document.body.style.overflow='';
+  /* 닫을 때 이전 포커스 복귀 */
+  if(_modalPrevFocus&&_modalPrevFocus.focus){
+    try{_modalPrevFocus.focus();}catch(e){}
+    _modalPrevFocus=null;
+  }
+}
+
+/* ── 이미지 확대 ── */
+function openImgZoom(card){
+  var zw=document.getElementById('imgZoomWrap');
+  zw.innerHTML='';
+  var img=makeImg(card,card.isRev?'REV':'');
+  /* 확대 이미지: 전체 너비 활용 */
+  img.style.cssText='width:100%;height:auto;border-radius:12px;display:block;'
+    +'max-height:88vh;object-fit:contain;'
+    +(card.isRev?'transform:rotate(180deg)':'');
+  zw.appendChild(img);
+  document.getElementById('imgZoom').classList.add('OPEN');
+}
+function closeImgZoom(){document.getElementById('imgZoom').classList.remove('OPEN');}
+document.getElementById('imgZoom').addEventListener('click',closeImgZoom);
+
+/* init */
+renderSpInfo();
+
+/* PWA 바로가기 URL 파라미터 처리 (?mode=tarot 또는 ?mode=birth) */
+(function handleStartUrl(){
+  var params=new URLSearchParams(window.location.search);
+  var mode=params.get('mode');
+  if(mode==='tarot') selMode('tarot');
+  else if(mode==='birth') selMode('birth');
+})();
+
+
+/* ── i18n: data-i18n 속성으로 마킹된 HTML 요소 텍스트 업데이트 ──
+   다른 언어 파일 로드 시 applyLocale() 호출하면 UI 전체 갱신 */
+function applyLocale(){
+  var L=window.LOCALE;
+  if(!L)return;
+  /* html lang/dir 속성 동적 업데이트 */
+  if(L.lang) document.documentElement.lang=L.lang;
+  if(L.dir)  document.documentElement.dir=L.dir;
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var key=el.getAttribute('data-i18n');
+    var parts=key.split('.');
+    var val=L;
+    for(var i=0;i<parts.length;i++){
+      val=val&&val[parts[i]];
+    }
+    if(val&&typeof val==='string') el.textContent=val;
+  });
+}
+applyLocale();
+
+/* Service Worker 등록 (HTTPS 또는 localhost에서만 동작) */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    /* index.html meta에서 버전 읽기 */
+    var verMeta=document.querySelector('meta[name="app-version"]');
+    var appVer=verMeta?verMeta.getAttribute('content'):'1.0.0';
+    navigator.serviceWorker.register('./sw.js')
+      .then(function(reg){
+        /* SW에 현재 버전 알림 → 캐시 키 업데이트 */
+        if(reg.active){
+          reg.active.postMessage({type:'SET_VERSION',version:appVer});
+        }
+        reg.addEventListener('updatefound',function(){
+          var sw=reg.installing;
+          if(sw) sw.addEventListener('statechange',function(){
+            if(sw.state==='installed'&&navigator.serviceWorker.controller){
+              sw.postMessage({type:'SET_VERSION',version:appVer});
+            }
+          });
+        });
+      })
+      .catch(function(err){
+        logger.error('SW 등록 실패:', err);
+      });
+  });
+}
+</script></script>
+</body>
+</html>
