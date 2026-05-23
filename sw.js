@@ -1,141 +1,97 @@
 /* ═══════════════════════════════════════════════
-   NORU — Service Worker
+   NORU — Service Worker v2
    전략:
-   - 앱 셸 (index.html, manifest, 아이콘): Cache First
-   - Wikimedia 카드 이미지: Network First + 캐시 폴백
-   - Google Fonts / jsDelivr: Cache First (외부 리소스)
-
-   캐시 버전 관리:
-   index.html의 <meta name="app-version"> 값을 읽어 사용.
-   버전 업데이트 시 index.html 한 곳만 수정하면 됩니다.
+   - 앱 셸 및 에셋(로컬 이미지): Cache First (오프라인 완벽 지원)
+   - 외부 리소스(폰트 등): Cache First
    ═══════════════════════════════════════════════ */
 
-/* 버전을 fetch로 index.html에서 읽어 캐시 키 구성
-   fetch 불가 시(오프라인 설치) fallback 버전 사용 */
-var CACHE_VER  = 'v1'; /* fallback — index.html meta와 동기화 필요 */
-var CACHE_NAME = 'noru-' + CACHE_VER;
-var IMG_CACHE  = 'noru-img-' + CACHE_VER;
+const CACHE_NAME = 'noru-v2'; // ★ 업데이트 시 이 숫자(v2 -> v3)를 올리세요!
 
-/* 앱 셸 — 오프라인에서도 반드시 동작해야 하는 파일들 */
-var APP_SHELL = [
+const APP_SHELL = [
   './',
   './index.html',
+  './css/',
+  './app.js',
+  './cards.js',
+  './assets/',
   './manifest.json',
-  './sw.js',
   './icon-192.svg',
-  './icon-512.svg',
   './locale/ko.js'
 ];
 
-/* ── message: 버전 업데이트 수신 ── */
-self.addEventListener('message', function(e) {
-  if(e.data && e.data.type === 'SET_VERSION') {
-    var newVer = 'noru-' + e.data.version;
-    if(newVer !== CACHE_NAME) {
-      /* 버전이 바뀌면 이전 캐시 삭제 후 새 버전으로 교체 */
-      caches.keys().then(function(keys){
-        return Promise.all(
-          keys.filter(function(k){
-            return k !== newVer && k !== newVer.replace('noru-','noru-img-');
-          }).map(function(k){ return caches.delete(k); })
-        );
-      });
-      CACHE_NAME = newVer;
-      IMG_CACHE  = 'noru-img-' + e.data.version;
-    }
-  }
-});
-
-
+/* ── Install: 앱 셸 사전 캐싱 및 즉시 대기열 통과 ── */
 self.addEventListener('install', function(e) {
+  self.skipWaiting(); // 새 버전이 발견되면 즉시 설치
   e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) {
-        return cache.addAll(APP_SHELL);
-      })
-      .then(function() {
-        /* 새 SW를 즉시 활성화 (기존 페이지 대기 없이) */
-        return self.skipWaiting();
-      })
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(APP_SHELL);
+    })
   );
 });
 
-/* ── activate: 오래된 캐시 정리 ── */
+/* ── Activate: 구버전 캐시 완벽 삭제 ── */
 self.addEventListener('activate', function(e) {
   e.waitUntil(
-    caches.keys().then(function(keys) {
+    caches.keys().then(function(cacheNames) {
       return Promise.all(
-        keys
-          .filter(function(k) {
-            return k !== CACHE_NAME && k !== IMG_CACHE;
-          })
-          .map(function(k) {
-            return caches.delete(k);
-          })
+        cacheNames.map(function(cache) {
+          if (cache !== CACHE_NAME) {
+            console.log('[SW] 구버전 캐시 삭제:', cache);
+            return caches.delete(cache);
+          }
+        })
       );
     }).then(function() {
-      /* 모든 열린 탭에 즉시 적용 */
-      return self.clients.claim();
+      return self.clients.claim(); // 즉시 모든 탭에 제어권 행사
     })
   );
 });
 
-/* ── fetch: 요청 가로채기 ── */
+/* ── Fetch: 오프라인 캐시 서빙 ── */
 self.addEventListener('fetch', function(e) {
-  var url = e.request.url;
+  // GET 요청만 가로챕니다.
+  if (e.request.method !== 'GET') return;
 
-  /* Wikimedia 카드 이미지 — Network First + 캐시 폴백 */
-  if (url.includes('upload.wikimedia.org')) {
-    e.respondWith(networkFirstImg(e.request));
+  const url = new URL(e.request.url);
+
+  // 🚨 [핵심] HTML 문서(페이지 진입점)는 무조건 Network First 전략!
+  // 사용자가 F5를 누르면 무조건 서버에서 최신 코드를 가져오게 합니다.
+  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('index.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(function(networkResponse) {
+          // 네트워크가 성공하면 캐시도 최신본으로 덮어씌움
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(e.request, responseToCache);
+          });
+          return networkResponse;
+        })
+        .catch(function() {
+          // 인터넷이 끊겼을 때만 캐시에서 예전 HTML을 보여줌
+          return caches.match(e.request);
+        })
+    );
     return;
   }
 
-  /* Google Fonts / jsDelivr — Cache First */
-  if (url.includes('fonts.googleapis.com') ||
-      url.includes('fonts.gstatic.com') ||
-      url.includes('cdn.jsdelivr.net')) {
-    e.respondWith(cacheFirst(e.request, CACHE_NAME));
-    return;
-  }
-
-  /* 앱 셸 및 기타 — Cache First */
-  if (e.request.method === 'GET') {
-    e.respondWith(cacheFirst(e.request, CACHE_NAME));
-  }
-});
-
-/* ── 전략 함수들 ── */
-
-/* Cache First: 캐시에 있으면 캐시, 없으면 네트워크 후 캐시 저장 */
-function cacheFirst(request, cacheName) {
-  return caches.match(request).then(function(cached) {
-    if (cached) return cached;
-    return fetch(request).then(function(response) {
-      if (!response || response.status !== 200) return response;
-      var clone = response.clone();
-      caches.open(cacheName).then(function(cache) {
-        cache.put(request, clone);
+  // 📦 나머지(이미지, CSS, JS)는 Cache First 전략
+  // 이미 주머니에 있으면 바로 보여줘서 로딩 속도를 폭발적으로 높임
+  e.respondWith(
+    caches.match(e.request).then(function(cachedResponse) {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(e.request).then(function(networkResponse) {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse;
+        }
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then(function(cache) {
+          cache.put(e.request, responseToCache);
+        });
+        return networkResponse;
       });
-      return response;
-    });
-  });
-}
-
-/* Network First: 네트워크 우선, 실패 시 캐시 폴백 (카드 이미지용) */
-function networkFirstImg(request) {
-  return fetch(request)
-    .then(function(response) {
-      if (!response || response.status !== 200) throw new Error('fetch failed');
-      var clone = response.clone();
-      caches.open(IMG_CACHE).then(function(cache) {
-        cache.put(request, clone);
-      });
-      return response;
     })
-    .catch(function() {
-      /* 오프라인 시 캐시된 이미지 반환 */
-      return caches.match(request).then(function(cached) {
-        return cached || new Response('', { status: 404 });
-      });
-    });
-}
+  );
+});
