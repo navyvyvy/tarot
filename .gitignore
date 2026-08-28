@@ -140,3 +140,7 @@ vite.config.ts.timestamp-*
 
 # zip ignore
 *.zip
+
+# Local writing/QA artifacts
+_workspace/
+.playwright-mcp/

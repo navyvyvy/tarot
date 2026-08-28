@@ -1,0 +1,80 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const core = require('../core.js');
+const cards = require('../card.js');
+
+test('shuffleDeck shuffles copies without mutating the source', function() {
+  const source = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  const values = [0, 0, 0, 0, 0];
+  const shuffled = core.shuffleDeck(source, 0.5, function() { return values.shift(); });
+
+  assert.deepEqual(source, [{ id: 1 }, { id: 2 }, { id: 3 }]);
+  assert.deepEqual(shuffled.map(function(card) { return card.id; }), [2, 3, 1]);
+  assert.ok(shuffled.every(function(card) { return card.isRev; }));
+  assert.notEqual(shuffled[0], source[1]);
+});
+
+test('calculateBirthCard keeps the existing reduction and pair lookup', function() {
+  const pairs = { 12: { c: [12, 3], d: 'pair' } };
+  assert.deepEqual(core.calculateBirthCard(1990, 1, 1, pairs), pairs[12]);
+  assert.deepEqual(core.calculateBirthCard(2000, 1, 1, {}), {
+    c: [4, 4],
+    d: '두 카드의 에너지가 함께합니다.'
+  });
+});
+
+test('all 78 configured card images exist locally', function() {
+  const filenames = Object.values(cards);
+  assert.equal(filenames.length, 78);
+  assert.equal(new Set(filenames).size, 78);
+  filenames.forEach(function(filename) {
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets', filename)), filename);
+  });
+});
+
+test('service worker shell references real project files', function() {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+  const shell = source.match(/const APP_SHELL = \[([\s\S]*?)\];/)[1];
+  const files = Array.from(shell.matchAll(/'\.\/([^']*)'/g), function(match) { return match[1]; });
+
+  files.filter(Boolean).forEach(function(file) {
+    const localFile = file.split('?')[0];
+    assert.ok(fs.existsSync(path.join(__dirname, '..', localFile)), file);
+  });
+  assert.doesNotMatch(source, /cards\.js/);
+  assert.match(source, /Object\.values\(self\.CARD_CONFIG\)/);
+});
+
+test('spread meanings and card symbolism stay complete', function() {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'locale', 'ko.js'), 'utf8');
+  const sandbox = { window: {} };
+  vm.runInNewContext(source, sandbox);
+  const locale = sandbox.window.LOCALE;
+
+  assert.deepEqual(Array.from(locale.spreads[10].pos), [
+    '현재 상황', '교차하는 영향', '의식적인 목표', '상황의 기반', '지나가는 과거',
+    '가까운 미래', '질문자의 태도', '주변 환경', '희망과 두려움', '최종 결과'
+  ]);
+  assert.doesNotMatch(locale.spreads[3].desc, /가장 오래된/);
+  assert.doesNotMatch(locale.spreads[10].desc, /15세기/);
+  assert.equal(locale.spreads[7].pos[3], '의지와 해결책');
+  assert.equal(locale.symbolism.major.length, 22);
+  assert.equal(Object.keys(locale.symbolism.minor).length, 56);
+  assert.ok(locale.symbolism.major.every(Boolean));
+  assert.ok(Object.values(locale.symbolism.minor).every(Boolean));
+  assert.equal(locale.readingNotes.major.length, 22);
+  assert.ok(locale.readingNotes.major.every(function(note) { return note.focus && note.question; }));
+  assert.ok(locale.major.every(function(card) { return card.keywords.length >= 3 && card.up && card.rv && card.lv && card.ca; }));
+  assert.equal(Object.keys(locale.minorData).length, 56);
+  assert.ok(Object.values(locale.minorData).every(function(card) { return card.up && card.rv && card.lv && card.ca; }));
+  assert.equal(Object.keys(locale.minorKeywords).length, 56);
+  assert.ok(Object.values(locale.minorKeywords).every(function(keywords) { return keywords.length >= 3; }));
+  assert.ok(locale.suits.every(function(suit) { return suit.guide && suit.reverseLove && suit.reverseCareer; }));
+  assert.ok(locale.numbers.every(function(number) { return number.meaning && number.question; }));
+
+  const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  assert.match(app, /\[\[2,2,1\],\[9,5,1\],\[4,1,2\],\[0,2,2\],\[1,3,2\],\[5,4,2\],\[8,5,2\],\[3,2,3\],\[7,5,3\],\[6,5,4\]\]/);
+});

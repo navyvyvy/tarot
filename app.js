@@ -2,10 +2,13 @@
 /* ═══ STARFIELD ═══ */
 (function(){
   var c=document.getElementById('cvs'),X=c.getContext('2d'),stars=[];
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var running=false;
   function rsz(){c.width=innerWidth;c.height=innerHeight}
   function ini(){stars=[];for(var i=0;i<100;i++)stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2+.2,a:Math.random(),da:(Math.random()-.5)*.006,g:Math.random()<.1})}
-  function drw(){if(document.hidden)return requestAnimationFrame(drw);X.clearRect(0,0,c.width,c.height);stars.forEach(function(s){s.a+=s.da;if(s.a<0||s.a>1)s.da*=-1;X.beginPath();X.arc(s.x,s.y,s.r,0,Math.PI*2);X.fillStyle=s.g?'rgba(200,164,72,'+s.a+')':'rgba(255,255,255,'+(s.a*.72)+')';X.fill()});requestAnimationFrame(drw)}
+  function drw(){if(document.hidden){running=false;return;}running=true;X.clearRect(0,0,c.width,c.height);stars.forEach(function(s){s.a+=s.da;if(s.a<0||s.a>1)s.da*=-1;X.beginPath();X.arc(s.x,s.y,s.r,0,Math.PI*2);X.fillStyle=s.g?'rgba(200,164,72,'+s.a+')':'rgba(255,255,255,'+(s.a*.72)+')';X.fill()});requestAnimationFrame(drw)}
   rsz();ini();drw();addEventListener('resize',function(){rsz();ini()});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&!running)drw();});
 })();
 
 function cardImgUrl(card) {
@@ -105,17 +108,15 @@ var CARD_BACK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 600"
     +'</svg>';
 })();
 
-function makeImg(card, isRev, isCeltic) {
+function makeImg(card, isRev) {
   try {
     const img = document.createElement('img');
     img.src = cardImgUrl(card);
     img.alt = cardName(card);
     img.loading = 'lazy';
-    img.crossOrigin = 'anonymous';
 
     let classes = ['card-image'];
     if (isRev) classes.push('is-reversed');
-    if (isCeltic) classes.push('card-image-celtic');
     img.className = classes.join(' ');
 
     img.onerror = function() {
@@ -125,7 +126,7 @@ function makeImg(card, isRev, isCeltic) {
       };
       const c = colors[card.type === 'major' ? 'major' : card.suitCode] || colors['major'];
       const ph = document.createElement('div');
-      ph.className = 'card-placeholder' + (isCeltic ? ' card-image-celtic' : '');
+      ph.className = 'card-placeholder';
       ph.style.background = `linear-gradient(145deg, ${c[0]}, ${c[1]})`;
       ph.innerHTML = `
         <div class="card-placeholder-num">${card.number || ''}</div>
@@ -146,6 +147,8 @@ function makeBackSVG(){
   return div;
 }
 
+document.querySelectorAll('.sh-c,.rv-c').forEach(function(el){el.appendChild(makeBackSVG());});
+
 /* ── SPREAD PREVIEW (Mini Map) ── */
 function buildPreview(n, pos) {
   const sl = (i) => `<div class="spread-col"><div class="spread-slot">${i+1}</div><div class="spread-label">${pos[i]}</div></div>`;
@@ -159,16 +162,16 @@ function buildPreview(n, pos) {
   } else if (n === 5) {
     html += `<div class="preview-grid-cross">${bl()}${sl(1)}${bl()}${sl(3)}${sl(0)}${sl(4)}${bl()}${sl(2)}${bl()}</div>`;
   } else if (n === 7) {
-    const CS7 = 42, RS7 = 68;
-    html += `<div style="position:relative;width:122px;height:${RS7*2+70}px;margin:0 auto">`;
-    const sp7 = (col, row, i) => `<div class="spread-col" style="position:absolute;left:${col*CS7}px;top:${Math.round(row*RS7)}px"><div class="spread-slot">${i+1}</div><div class="spread-label">${pos[i]}</div></div>`;
+    const CS7 = 60, RS7 = 78;
+    html += `<div style="position:relative;width:176px;height:${RS7*2+84}px;margin:0 auto">`;
+    const sp7 = (col, row, i) => `<div class="spread-col spread-col-seven" style="position:absolute;left:${col*CS7}px;top:${Math.round(row*RS7)}px"><div class="spread-slot">${i+1}</div><div class="spread-label">${pos[i]}</div></div>`;
     html += sp7(1,0,0) + sp7(0,0.5,4) + sp7(2,0.5,5) + sp7(1,1,6) + sp7(0,1.5,2) + sp7(2,1.5,1) + sp7(1,2,3);
     html += '</div>';
   } else if (n === 10) {
     html += `<div class="preview-grid-celtic">
-               ${bl()}${sl(4)}${bl()}${bl()}${sl(9)}
-               ${sl(2)}${sl(0)}${sl(1)}${sl(3)}${sl(8)}
-               ${bl()}${sl(5)}${bl()}${bl()}${sl(7)}
+               ${bl()}${sl(2)}${bl()}${bl()}${sl(9)}
+               ${sl(4)}${sl(0)}${sl(1)}${sl(5)}${sl(8)}
+               ${bl()}${sl(3)}${bl()}${bl()}${sl(7)}
                ${bl()}${bl()}${bl()}${bl()}${sl(6)}
              </div>`;
   }
@@ -177,8 +180,14 @@ function buildPreview(n, pos) {
 
 /* ── NORU 네임스페이스 ── */
 window.NORU = window.NORU || {};
+var CORE=window.NORU.core;
+var REDUCED_MOTION=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var ANIM = window.NORU.anim = {
-  SHUFFLE: 1800, REVEAL: 1550, BIRTH: 1400, SCROLL: 340, ARR_UPD: 120
+  SHUFFLE: REDUCED_MOTION?0:1800,
+  REVEAL: REDUCED_MOTION?0:1550,
+  BIRTH: REDUCED_MOTION?0:1400,
+  SCROLL: REDUCED_MOTION?0:340,
+  ARR_UPD: REDUCED_MOTION?0:120
 };
 
 var _toastTimer=null;
@@ -193,17 +202,8 @@ function showToast(msg, duration){
 
 var _DEV = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 var logger = {
-  error: function(msg, err) { if(_DEV) console.error('[NORU]', msg, err||''); },
-  log:   function(msg, val) { if(_DEV) console.log('[NORU]', msg, val||''); }
+  error: function(msg, err) { if(_DEV) console.error('[NORU]', msg, err||''); }
 };
-
-var ROOT=getComputedStyle(document.documentElement);
-var CARD_W=parseInt(ROOT.getPropertyValue('--cw'))||100;
-var CARD_H=parseInt(ROOT.getPropertyValue('--ch'))||170;
-var M7_CS=CARD_W+20;
-var M7_RS=CARD_H+40;
-var M7_W=M7_CS*2+CARD_W;
-var M7_H=M7_RS*2+CARD_H+40;
 
 function cardName(card){
   if(!window.LOCALE) return '';
@@ -220,11 +220,30 @@ function cardName(card){
 
 var S=window.NORU.state={mode:'',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5};
 
+function deckCards(){
+  return S.deck==='major'
+    ? window.LOCALE.major
+    : S.deck==='minor'
+      ? window.LOCALE.minorDataArray||[]
+      : window.LOCALE.allCards||[];
+}
+
+function reshuffle(cards){
+  S.shuffled=CORE.shuffleDeck(cards||deckCards(),S.revProb);
+}
+
 function show(id){
   ['s0','s1','s2','s3','s4','s5'].forEach(function(s){
-    document.getElementById(s).classList.toggle('ON',s===id);
+    var step=document.getElementById(s);
+    var active=s===id;
+    step.hidden=!active;
+    step.classList.toggle('ON',active);
   });
-  window.scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({top:0,behavior:REDUCED_MOTION?'auto':'smooth'});
+  requestAnimationFrame(function(){
+    var title=document.querySelector('#'+id+' h2[tabindex="-1"]');
+    if(title)title.focus({preventScroll:true});
+  });
 }
 
 function renderSpInfo(){
@@ -249,15 +268,9 @@ function selMode(m){
 document.getElementById('mT').addEventListener('click',function(){selMode('tarot');});
 document.getElementById('mB').addEventListener('click',function(){selMode('birth');});
 
-document.querySelectorAll('.deck-btn').forEach(function(b){
-  b.addEventListener('click',function(){
-    document.querySelectorAll('.deck-btn').forEach(function(x){
-      x.classList.remove('is-active');
-      x.setAttribute('aria-checked','false');
-    });
-    b.classList.add('is-active');
-    b.setAttribute('aria-checked','true');
-    S.deck=b.dataset.deck;
+document.querySelectorAll('.deck-input').forEach(function(input){
+  input.addEventListener('change',function(){
+    if(input.checked)S.deck=input.value;
   });
 });
 
@@ -266,15 +279,10 @@ document.getElementById('revSlider').addEventListener('input',function(){
   document.getElementById('revVal').textContent=this.value+'%';
   this.setAttribute('aria-valuetext',this.value+'%');
 });
-document.querySelectorAll('.count-btn').forEach(function(e){
-  e.addEventListener('click',function(){
-    document.querySelectorAll('.count-btn').forEach(function(x){
-      x.classList.remove('is-active');
-      x.setAttribute('aria-checked','false');
-    });
-    e.classList.add('is-active');
-    e.setAttribute('aria-checked','true');
-    S.count=parseInt(e.dataset.n);
+document.querySelectorAll('.count-input').forEach(function(input){
+  input.addEventListener('change',function(){
+    if(!input.checked)return;
+    S.count=parseInt(input.value,10);
     renderSpInfo();
   });
 });
@@ -287,14 +295,11 @@ document.getElementById('bk3').addEventListener('click',function(){
 });
 document.getElementById('bk4').addEventListener('click',function(){
   S.selected=[];
-  S.reversed=[];
+  S.revealed=[];
   S.adding=false;
-  var MAJ=window.LOCALE.major; var MIN=window.LOCALE.minorDataArray||[]; var ALL=window.LOCALE.allCards||[];
-  var pool=(S.deck==='major'?MAJ:S.deck==='minor'?MIN:ALL).slice();
-  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
-  S.shuffled=pool.map(function(c){var o=Object.assign({},c);o.isRev=Math.random()<S.revProb;return o;});
+  reshuffle();
   document.getElementById('btnRev').className='btn-rev';
-  document.getElementById('btnRev').textContent='❆  선택한 카드 펼쳐보기  ❆';
+  document.getElementById('btnRev').textContent='선택한 카드 펼치기';
   document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
   buildTrack();show('s3');
 });
@@ -307,11 +312,9 @@ document.getElementById('toS3').addEventListener('click',function() {
 });
 
 function resetAll(){
-  S={mode:'',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5};
-  document.querySelectorAll('.deck-btn').forEach(function(b){b.classList.remove('is-active');});
-  document.querySelector('.deck-btn[data-deck="major"]').classList.add('is-active');
-  document.querySelectorAll('.count-btn').forEach(function(e){e.classList.remove('is-active');});
-  document.querySelector('.count-btn[data-n="1"]').classList.add('is-active');
+  Object.assign(S,{mode:'',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5});
+  document.querySelector('.deck-input[value="major"]').checked=true;
+  document.querySelector('.count-input[value="1"]').checked=true;
   document.getElementById('revSlider').value=50;
   document.getElementById('revVal').textContent='50%';
   document.getElementById('spInfo').className='sp-info';
@@ -326,6 +329,7 @@ function resetAll(){
   document.getElementById('btnMore').className='btn-more';
   document.getElementById('pFill').style.width='0%';
   document.getElementById('pTxt').textContent='0 / 0';
+  document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow','0');
   document.getElementById('mT').classList.remove('is-selected');
   document.getElementById('mB').classList.remove('is-selected');
   document.getElementById('birthRes').className='birth-res';
@@ -342,10 +346,7 @@ function doShuffle(){
   var ov=document.getElementById('ovSh');ov.classList.add('ON');
   setTimeout(function(){
     try{
-      var MAJ=window.LOCALE.major; var MIN=window.LOCALE.minorDataArray||[]; var ALL=window.LOCALE.allCards||[];
-      var pool=(S.deck==='major'?MAJ:S.deck==='minor'?MIN:ALL).slice();
-      for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
-      S.shuffled=pool.map(function(c){var o=Object.assign({},c);o.isRev=Math.random()<S.revProb;return o;});
+      reshuffle();
       S.selected=[];S.revealed=[];S.adding=false;
       document.getElementById('btnRev').className='btn-rev';
       document.getElementById('s4grid').innerHTML='';
@@ -375,9 +376,12 @@ function buildTrack() {
     const fragment = document.createDocumentFragment();
 
     S.shuffled.forEach(function(card, idx) {
-      const el = document.createElement('div');
+      const el = document.createElement('button');
+      el.type = 'button';
       el.className = 'track-card';
       el.dataset.i = idx;
+      el.setAttribute('aria-pressed','false');
+      el.setAttribute('aria-label',(idx+1)+'번 카드 선택');
 
       const back = makeBackSVG();
       back.style.cssText = 'position:absolute;inset:0;pointer-events:none';
@@ -403,23 +407,23 @@ function buildTrack() {
   tr.addEventListener('wheel',function(e){
     if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
       e.preventDefault();
-      tr.scrollBy({left:e.deltaY*2,behavior:'smooth'});
+      tr.scrollBy({left:e.deltaY*2,behavior:REDUCED_MOTION?'auto':'smooth'});
       setTimeout(updArr,200);
     }
   },{passive:false});
   tr.addEventListener('scroll',updArr);
-  setupDrag(tr);
 })();
 
 function pick(idx,el){
   if(S.adding){
     var p=S.selected.indexOf(idx);
-    if(p>-1){S.selected.splice(p,1);el.classList.remove('is-selected');}
-    else{S.selected.push(idx);el.classList.add('is-selected');}
+    if(p>-1){S.selected.splice(p,1);el.classList.remove('is-selected');el.setAttribute('aria-pressed','false');}
+    else{S.selected.push(idx);el.classList.add('is-selected');el.setAttribute('aria-pressed','true');}
     var n=S.selected.length;
     var pct=n===0?0:100;
     document.getElementById('pFill').style.width=pct+'%';
     document.getElementById('pTxt').textContent=n+window.LOCALE.ui.cardCountSelected;
+    document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow',String(pct));
     document.getElementById('btnRev').classList.toggle('ON',n>0);
     return;
   }
@@ -427,10 +431,12 @@ function pick(idx,el){
   if(p>-1){
     S.selected.splice(p,1);
     el.classList.remove('is-selected');
+    el.setAttribute('aria-pressed','false');
   } else {
     if(S.selected.length>=S.count) return;
     S.selected.push(idx);
     el.classList.add('is-selected');
+    el.setAttribute('aria-pressed','true');
   }
   updProg();
   document.getElementById('btnRev').classList.toggle('ON',S.selected.length===S.count);
@@ -448,25 +454,13 @@ document.getElementById('arrL').addEventListener('click',function(){scrollTr(-1)
 document.getElementById('arrR').addEventListener('click',function(){scrollTr(1);});
 function scrollTr(d){
   var t=document.getElementById('ctrack');
-  t.scrollBy({left:d*340,behavior:'smooth'});setTimeout(updArr,ANIM.SCROLL);
+  t.scrollBy({left:d*340,behavior:REDUCED_MOTION?'auto':'smooth'});setTimeout(updArr,ANIM.SCROLL);
 }
 function updArr(){
   var t=document.getElementById('ctrack'),L=document.getElementById('arrL'),R=document.getElementById('arrR');
   if(!t)return;
   L.classList.toggle('H',t.scrollLeft<=3);
   R.classList.toggle('H',t.scrollLeft+t.clientWidth>=t.scrollWidth-3);
-}
-
-function setupDrag(tr){
-  var dn=false,sx=0,sl=0,dr=false;
-  tr.addEventListener('mousedown',function(e){dn=true;dr=false;sx=e.pageX-tr.offsetLeft;sl=tr.scrollLeft;tr.style.cursor='grabbing';});
-  document.addEventListener('mouseup',function(){dn=false;tr.style.cursor='grab';});
-  tr.addEventListener('mousemove',function(e){
-    if(!dn)return;e.preventDefault();
-    var dx=(e.pageX-tr.offsetLeft)-sx;if(Math.abs(dx)>4)dr=true;
-    tr.scrollLeft=sl-dx*1.3;updArr();
-  });
-  tr.addEventListener('click',function(e){if(dr){e.stopPropagation();dr=false;}},true);
 }
 
 document.getElementById('btnRev').addEventListener('click',function(){
@@ -479,12 +473,12 @@ document.getElementById('btnRev').addEventListener('click',function(){
     nc.forEach(function(c){S.revealed.push(c);});
     S.adding=false;S.selected=[];
     document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
-    document.getElementById('btnRev').textContent='❆  선택한 카드 펼쳐보기  ❆';
+    document.getElementById('btnRev').textContent='선택한 카드 펼치기';
     var ex=document.getElementById('extra');ex.style.display='block';
     var eg=document.getElementById('extraGrid');
     nc.forEach(function(c,i){eg.appendChild(mkCard(c,'추가 #'+(base+i-SP[S.count].pos.length+1),base+i));});
     show('s4');refreshMore();
-    setTimeout(function(){ex.scrollIntoView({behavior:'smooth',block:'nearest'});},200);
+    setTimeout(function(){ex.scrollIntoView({behavior:REDUCED_MOTION?'auto':'smooth',block:'nearest'});},200);
   } else {
     if(S.selected.length<S.count)return;
     var ov=document.getElementById('ovRv');ov.classList.add('ON');
@@ -508,43 +502,46 @@ function doReveal(){
   }
 }
 
-function blankPC(isCeltic) {
-  const d = document.createElement('div');
-  d.className = 'result-card-blank' + (isCeltic ? ' is-celtic' : '');
-  return d;
-}
-
-function mkCard(card, lbl, idx, isCeltic) {
+function mkCard(card, lbl, idx) {
   try {
-    const el = document.createElement('div');
-    el.className = 'result-card' + (isCeltic ? ' is-celtic' : '');
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'result-card';
+    el.setAttribute('aria-label',(lbl||cardName(card))+' 카드 해석 보기');
 
     const numPrefix = typeof idx === 'number' ? `${idx + 1}. ` : '';
     const revSuffix = card.isRev ? ` · ${window.LOCALE.ui.reversedShort}` : '';
     const labelClass = card.isRev ? 'result-label is-reversed' : 'result-label';
 
     el.innerHTML = `
-      <div class="result-frame"></div>
-      <div class="${labelClass}">${numPrefix}${lbl || '카드 ' + (idx + 1)}${revSuffix}</div>
-      <div class="result-name">${cardName(card)}</div>
+      <span class="result-frame"></span>
+      <span class="${labelClass}">${numPrefix}${lbl || '카드 ' + (idx + 1)}${revSuffix}</span>
+      <span class="result-name">${cardName(card)}</span>
     `;
 
     const frame = el.querySelector('.result-frame');
-    frame.appendChild(makeImg(card, card.isRev, isCeltic));
+    frame.appendChild(makeImg(card, card.isRev));
 
     el.addEventListener('click', () => openModal(card));
 
-    const delay = Math.min(idx, 8) * 80;
+    const delay = REDUCED_MOTION ? 0 : Math.min(idx, 8) * 55;
     setTimeout(() => {
       el.classList.add('show');
-      setTimeout(() => frame.classList.add('flip-in'), 120);
+      setTimeout(() => frame.classList.add('flip-in'), REDUCED_MOTION?0:80);
     }, delay + 10);
 
     return el;
   } catch(e) {
     logger.error('카드 생성 오류:', e);
-    return document.createElement('div');
+    return document.createElement('span');
   }
+}
+
+function placeCard(grid,cards,sp,index,column,row,rowSpan){
+  var card=mkCard(cards[index],sp.pos[index],index);
+  card.style.gridColumn=column;
+  card.style.gridRow=row+(rowSpan?' / span '+rowSpan:'');
+  grid.appendChild(card);
 }
 
 function buildGrid(cards, sp, con) {
@@ -558,49 +555,31 @@ function buildGrid(cards, sp, con) {
     }
     if (L === 'cross5') {
       var g = document.createElement('div'); g.className = 'result-grid-cross';
-      var bl = blankPC.bind(null, false);
-      g.appendChild(bl()); g.appendChild(mkCard(cards[1], sp.pos[1], 1)); g.appendChild(bl());
-      g.appendChild(mkCard(cards[3], sp.pos[3], 3));
-      g.appendChild(mkCard(cards[0], sp.pos[0], 0));
-      g.appendChild(mkCard(cards[4], sp.pos[4], 4));
-      g.appendChild(bl()); g.appendChild(mkCard(cards[2], sp.pos[2], 2)); g.appendChild(bl());
+      placeCard(g,cards,sp,0,2,2);
+      placeCard(g,cards,sp,1,2,1);
+      placeCard(g,cards,sp,2,2,3);
+      placeCard(g,cards,sp,3,1,2);
+      placeCard(g,cards,sp,4,3,2);
       con.appendChild(g);
       return;
     }
     if (L === 'seven') {
       var g = document.createElement('div'); g.className = 'result-grid-seven';
-      var CS = M7_CS, RS = M7_RS;
-      g.style.width = M7_W + 'px'; g.style.height = M7_H + 'px';
       var pos7 = [
-        [0, 1, 0  ], [4, 0, 0.5], [5, 2, 0.5], [6, 1, 1  ],
-        [2, 0, 1.5], [1, 2, 1.5], [3, 1, 2  ]
+        [0,2,1], [4,1,2], [5,3,2], [6,2,3],
+        [2,1,4], [1,3,4], [3,2,5]
       ];
       pos7.forEach(function(p) {
-        var cardIdx = p[0], col = p[1], row = p[2];
-        var pc = mkCard(cards[cardIdx], sp.pos[cardIdx], cardIdx);
-        pc.style.position = 'absolute';
-        pc.style.left = (col * CS) + 'px';
-        pc.style.top = (row * RS) + 'px';
-        g.appendChild(pc);
+        placeCard(g,cards,sp,p[0],p[1],p[2],2);
       });
       con.appendChild(g);
       return;
     }
     if (L === 'celtic') {
       var g = document.createElement('div'); g.className = 'result-grid-celtic';
-      var bl = blankPC.bind(null, true);
-      g.appendChild(bl()); g.appendChild(mkCard(cards[4], sp.pos[4], 4, true));
-      g.appendChild(bl()); g.appendChild(bl()); g.appendChild(mkCard(cards[9], sp.pos[9], 9, true));
-
-      g.appendChild(mkCard(cards[2], sp.pos[2], 2, true)); g.appendChild(mkCard(cards[0], sp.pos[0], 0, true));
-      g.appendChild(mkCard(cards[1], sp.pos[1], 1, true)); g.appendChild(mkCard(cards[3], sp.pos[3], 3, true));
-      g.appendChild(mkCard(cards[8], sp.pos[8], 8, true));
-
-      g.appendChild(bl()); g.appendChild(mkCard(cards[5], sp.pos[5], 5, true));
-      g.appendChild(bl()); g.appendChild(bl()); g.appendChild(mkCard(cards[7], sp.pos[7], 7, true));
-
-      g.appendChild(bl()); g.appendChild(bl()); g.appendChild(bl()); g.appendChild(bl());
-      g.appendChild(mkCard(cards[6], sp.pos[6], 6, true));
+      [[2,2,1],[9,5,1],[4,1,2],[0,2,2],[1,3,2],[5,4,2],[8,5,2],[3,2,3],[7,5,3],[6,5,4]].forEach(function(p){
+        placeCard(g,cards,sp,p[0],p[1],p[2]);
+      });
       con.appendChild(g);
       return;
     }
@@ -611,23 +590,22 @@ function buildGrid(cards, sp, con) {
 }
 
 function getRemaining(){
-  var MAJ=window.LOCALE.major; var MIN=window.LOCALE.minorDataArray||[]; var ALL=window.LOCALE.allCards||[];
   var used={};S.revealed.forEach(function(c){used[c.id]=true;});
-  return(S.deck==='major'?MAJ:S.deck==='minor'?MIN:ALL).filter(function(c){return !used[c.id];});
+  return deckCards().filter(function(c){return !used[c.id];});
 }
 function refreshMore(){
   document.getElementById('btnMore').classList.toggle('ON',getRemaining().length>0);
 }
 document.getElementById('btnMore').addEventListener('click',function(){
   var pool=getRemaining();if(!pool.length)return;
-  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t;}
-  S.shuffled=pool.map(function(c){var o=Object.assign({},c);o.isRev=Math.random()<S.revProb;return o;});
+  reshuffle(pool);
   S.adding=true;
   S.selected=[];
   document.getElementById('pFill').style.width='0%';
   document.getElementById('pTxt').textContent='0장 선택';
+  document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow','0');
   document.getElementById('btnRev').className='btn-rev';
-  document.getElementById('btnRev').textContent='❆  결과에 추가하기  ❆';
+  document.getElementById('btnRev').textContent='결과에 추가하기';
   document.getElementById('hint').innerHTML=window.LOCALE.ui.hintAdd;
   buildTrack();
   show('s3');
@@ -667,7 +645,7 @@ document.getElementById('calcBtn').addEventListener('click',function(){
   var dy=parseInt(document.getElementById('bDay').value)||0;
   var res=document.getElementById('birthRes');
   if(!yr||!mo||!dy){
-    res.innerHTML='<p style="color:var(--acc);text-align:center;font-size:.85rem;padding:12px">'+window.LOCALE.ui.birthError+'</p>';
+    res.innerHTML='<p style="color:var(--danger);text-align:center;font-size:.85rem;padding:12px">'+window.LOCALE.ui.birthError+'</p>';
     res.className='birth-res ON';return;
   }
   var ov=document.getElementById('ovRv');
@@ -675,24 +653,11 @@ document.getElementById('calcBtn').addEventListener('click',function(){
   setTimeout(function(){
     ov.classList.remove('ON');
     try{
-      var BP=window.LOCALE.birthPairs;
-      var mm=mo, dd=dy, cc=Math.floor(yr/100), yy=yr%100;
-      if(isNaN(mm+dd+cc+yy)) throw new Error('날짜 값이 올바르지 않습니다.');
-      var total=mm+dd+cc+yy;
-      var first=total;
-      while(first>21){
-        var s=String(first);
-        if(s.length>=3){first=parseInt(s.slice(0,2))+parseInt(s.slice(2));}
-        else{first=Math.floor(first/10)+(first%10);}
-      }
-      var second=Math.floor(first/10)+(first%10);
-      if(second===0||second===first)second=first%10||first;
-      var bp=BP[first]||{c:[first,second],d:'두 카드의 에너지가 함께합니다.'};
-      renderBirth(bp);
+      renderBirth(CORE.calculateBirthCard(yr,mo,dy,window.LOCALE.birthPairs));
     } catch(e){
       logger.error('탄생카드 계산 오류:',e);
       var res=document.getElementById('birthRes');
-      res.innerHTML='<p style="color:var(--acc);text-align:center;padding:12px;font-size:.85rem">'+window.LOCALE.ui.birthCalcError+'</p>';
+      res.innerHTML='<p style="color:var(--danger);text-align:center;padding:12px;font-size:.85rem">'+window.LOCALE.ui.birthCalcError+'</p>';
       res.className='birth-res ON';
     }
   },ANIM.BIRTH);
@@ -709,11 +674,11 @@ function renderBirth(bp){
     if(bp.trio)H+='<div class="trio-note">'+window.LOCALE.ui.birthTrioNote+'</div>';
     H+='<div class="birth-cards">';
     cards.forEach(function(c,i){
-      H+=`<div class="result-card show" id="bpc${i}" style="cursor:pointer;">
-            <div class="result-frame flip-in" id="bpf${i}"></div>
-            <div class="result-label">${window.LOCALE.ui.majorNumPrefix || 'No.'}${c.number}</div>
-            <div class="result-name">${c.name}</div>
-          </div>`;
+      H+=`<button class="result-card show" id="bpc${i}" type="button" aria-label="${c.name} 카드 해석 보기">
+            <span class="result-frame flip-in" id="bpf${i}"></span>
+            <span class="result-label">${window.LOCALE.ui.majorNumPrefix || 'No.'}${c.number}</span>
+            <span class="result-name">${c.name}</span>
+          </button>`;
     });
     H+='</div>';
     H+='<div class="birth-desc-box"><h4>'+window.LOCALE.ui.birthDescTitle+'</h4><p>'+bp.d+'</p></div>';
@@ -721,7 +686,7 @@ function renderBirth(bp){
 
     cards.forEach(function(c,i){
       var f=document.getElementById('bpf'+i);if(!f)return;
-      f.appendChild(makeImg(c, false, false));
+      f.appendChild(makeImg(c, false));
       var w=document.getElementById('bpc'+i);
       if(w)(function(card){
         w.addEventListener('click',function(){openModal(card);});
@@ -737,7 +702,7 @@ function renderBirth(bp){
     });
   }catch(e){
     logger.error('탄생카드 렌더링 오류:',e);
-    res.innerHTML='<p style="color:var(--acc);text-align:center;padding:12px">표시 중 오류가 발생했습니다.</p>';
+    res.innerHTML='<p style="color:var(--danger);text-align:center;padding:12px">표시 중 오류가 발생했습니다.</p>';
     res.className='birth-res ON';
   }
 }
@@ -750,15 +715,28 @@ function openModal(card) {
     const box = document.getElementById('mImgBox');
 
     box.innerHTML = `
-      <div class="modal-img-wrapper" style="width:120px;height:205px;border-radius:9px;overflow:hidden;border:2px solid rgba(200,164,72,.38);flex-shrink:0;${card.isRev ? 'transform:rotate(180deg)' : ''}">
-      </div>
+      <button class="modal-img-wrapper${card.isRev ? ' is-reversed-image' : ''}" type="button" aria-label="카드 이미지 확대"></button>
     `;
     const wrap = box.querySelector('.modal-img-wrapper');
-    wrap.appendChild(makeImg(card, false, false));
+    wrap.appendChild(makeImg(card, false));
     wrap.addEventListener('click', (e) => { e.stopPropagation(); openImgZoom(card); });
 
     const L = window.LOCALE.ui;
+    const symbolismData = window.LOCALE.symbolism || {};
+    const symbolism = full.type === 'major'
+      ? (symbolismData.major || [])[full.id]
+      : (symbolismData.minor || {})[`${full.suitCode}.${full.numCode}`];
     const suitObj = window.LOCALE.suits ? window.LOCALE.suits.find(s => s.code === full.suitCode) : null;
+    const numberObj = window.LOCALE.numbers ? window.LOCALE.numbers.find(n => n.code === full.numCode) : null;
+    const majorNote = full.type === 'major' ? ((window.LOCALE.readingNotes || {}).major || [])[full.id] : null;
+    const readingKey = majorNote
+      ? majorNote.focus
+      : `${suitObj.guide} ${numberObj.label} 단계는 ${numberObj.meaning}을 뜻합니다.`;
+    const reflection = majorNote
+      ? majorNote.question
+      : numberObj.question.replace('{theme}', suitObj.t);
+    const reverseLove = suitObj ? suitObj.reverseLove : L.modalMajorReverseLove;
+    const reverseCareer = suitObj ? suitObj.reverseCareer : L.modalMajorReverseCareer;
     document.getElementById('mArc').textContent = (full.type === 'major' || !full.suitCode)
       ? `${L.modalArcMajor} · ${L.majorNumPrefix || 'No.'}${full.number}`
       : `${L.modalArcMinor} · ${suitObj ? suitObj.n : ''}`;
@@ -768,73 +746,109 @@ function openModal(card) {
 
     const body = document.getElementById('mBody');
     body.innerHTML = `
-      <div class="modal-section">
-        <div class="modal-section-title">${card.isRev ? L.modalSectionReversed : L.modalSectionUpright}</div>
-        <div class="modal-highlight"><p>${card.isRev ? full.rv : full.up}</p></div>
-        ${!card.isRev && full.rv ? `<div class="modal-rev-note"><em>${L.modalReversedPrefix} </em>${full.rv}</div>` : ''}
+      <div class="modal-tabs" role="tablist" aria-label="${L.modalTabsLabel}" data-active="0">
+        <button class="modal-tab is-active" id="mTabSummary" type="button" role="tab" aria-selected="true" aria-controls="mPanelSummary" data-index="0">${L.modalTabSummary}</button>
+        <button class="modal-tab" id="mTabDirections" type="button" role="tab" aria-selected="false" aria-controls="mPanelDirections" data-index="1" tabindex="-1">${L.modalTabDirections}</button>
+        <button class="modal-tab" id="mTabContexts" type="button" role="tab" aria-selected="false" aria-controls="mPanelContexts" data-index="2" tabindex="-1">${L.modalTabContexts}</button>
       </div>
-      <div class="modal-section">
-        <div class="modal-section-title">${L.modalSectionLove}</div>
-        <p>${full.lv || ''}</p>
-      </div>
-      <div class="modal-section">
-        <div class="modal-section-title">${L.modalSectionCareer}</div>
-        <p>${full.ca || ''}</p>
+      <div class="modal-tab-stage">
+        <section class="modal-tab-panel is-active" id="mPanelSummary" role="tabpanel" aria-labelledby="mTabSummary">
+          ${symbolism ? `<section class="modal-read-section">
+            <h3 class="modal-section-title">${L.modalSectionSymbolism}</h3>
+            <p>${symbolism}</p>
+          </section>` : ''}
+          <section class="modal-read-section">
+            <h3 class="modal-section-title">${L.modalSectionReadingKey}</h3>
+            <p>${readingKey}</p>
+          </section>
+          <section class="modal-read-section">
+            <h3 class="modal-section-title">${L.modalSectionReflection}</h3>
+            <p class="modal-reflection">${reflection}</p>
+          </section>
+        </section>
+        <section class="modal-tab-panel" id="mPanelDirections" role="tabpanel" aria-labelledby="mTabDirections" hidden>
+          <div class="modal-direction-list">
+            <section class="modal-direction${card.isRev ? '' : ' is-current'}">
+              <div class="modal-direction-head"><strong>${L.modalSectionUpright}</strong>${card.isRev ? '' : `<span>${L.modalCurrentDirection}</span>`}</div>
+              <p>${full.up}</p>
+            </section>
+            <section class="modal-direction${card.isRev ? ' is-current is-reversed' : ''}">
+              <div class="modal-direction-head"><strong>${L.modalSectionReversed}</strong>${card.isRev ? `<span>${L.modalCurrentDirection}</span>` : ''}</div>
+              <p>${full.rv}</p>
+            </section>
+          </div>
+        </section>
+        <section class="modal-tab-panel" id="mPanelContexts" role="tabpanel" aria-labelledby="mTabContexts" hidden>
+          <section class="modal-context-card">
+            <h3 class="modal-section-title">${L.modalSectionLove}</h3>
+            <p>${full.lv || ''}</p>
+            ${card.isRev ? `<div class="modal-context-note"><strong>${L.modalReversedContext}</strong>${reverseLove}</div>` : ''}
+          </section>
+          <section class="modal-context-card">
+            <h3 class="modal-section-title">${L.modalSectionCareer}</h3>
+            <p>${full.ca || ''}</p>
+            ${card.isRev ? `<div class="modal-context-note"><strong>${L.modalReversedContext}</strong>${reverseCareer}</div>` : ''}
+          </section>
+        </section>
       </div>
     `;
 
-    document.getElementById('mbg').classList.add('OPEN');
-    document.body.style.overflow = 'hidden';
+    const tabs = Array.from(body.querySelectorAll('.modal-tab'));
+    const panels = Array.from(body.querySelectorAll('.modal-tab-panel'));
+    const tabList = body.querySelector('.modal-tabs');
+    function selectTab(index, focus) {
+      tabs.forEach((tab, i) => {
+        const active = i === index;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        panels[i].classList.toggle('is-active', active);
+        panels[i].hidden = !active;
+      });
+      tabList.dataset.active = String(index);
+      if(focus) tabs[index].focus();
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectTab(index, false));
+      tab.addEventListener('keydown', (e) => {
+        if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+        e.preventDefault();
+        const next = e.key === 'Home' ? 0
+          : e.key === 'End' ? tabs.length - 1
+          : (index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        selectTab(next, true);
+      });
+    });
 
-    _modalPrevFocus = document.activeElement;
-    setTimeout(() => {
-      const closeBtn = document.getElementById('mClose');
-      if(closeBtn) closeBtn.focus();
-    }, 50);
+    document.getElementById('mbg').showModal();
   } catch(e) { logger.error('모달 오류:', e); }
 }
 
-document.getElementById('mbg').addEventListener('keydown',function(e){
-  if(!this.classList.contains('OPEN')) return;
-  if(e.key!=='Tab') return;
-  var focusable=this.querySelectorAll('button,a,[href],[tabindex]:not([tabindex="-1"]),[role="button"]');
-  if(!focusable.length)return;
-  var first=focusable[0], last=focusable[focusable.length-1];
-  if(e.shiftKey){ if(document.activeElement===first){e.preventDefault();last.focus();} }
-  else          { if(document.activeElement===last) {e.preventDefault();first.focus();} }
-});
-
 document.getElementById('mbg').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('mbg').addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();closeModal();}});
 document.getElementById('mClose').addEventListener('click',closeModal);
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){
-    if(document.getElementById('imgZoom').classList.contains('OPEN'))closeImgZoom();
-    else closeModal();
-  }
-});
-
-var _modalPrevFocus=null;
 function closeModal(){
-  document.getElementById('mbg').classList.remove('OPEN');
-  document.body.style.overflow='';
-  if(_modalPrevFocus&&_modalPrevFocus.focus){
-    try{_modalPrevFocus.focus();}catch(e){}
-    _modalPrevFocus=null;
-  }
+  var dialog=document.getElementById('mbg');
+  if(dialog.open)dialog.close();
 }
 
 /* ── IMAGE ZOOM ── */
 function openImgZoom(card){
   var zw=document.getElementById('imgZoomWrap');
   zw.innerHTML='';
-  var img=makeImg(card, card.isRev, false);
+  var img=makeImg(card, card.isRev);
   img.style.cssText='width:100%;height:auto;border-radius:12px;display:block;max-height:88vh;object-fit:contain;'
     +(card.isRev?'transform:rotate(180deg)':'');
   zw.appendChild(img);
-  document.getElementById('imgZoom').classList.add('OPEN');
+  document.getElementById('imgZoom').showModal();
 }
-function closeImgZoom(){document.getElementById('imgZoom').classList.remove('OPEN');}
-document.getElementById('imgZoom').addEventListener('click',closeImgZoom);
+function closeImgZoom(){
+  var dialog=document.getElementById('imgZoom');
+  if(dialog.open)dialog.close();
+}
+document.getElementById('imgZoom').addEventListener('click',function(e){if(e.target===this)closeImgZoom();});
+document.getElementById('imgZoom').addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();closeImgZoom();}});
+document.getElementById('imgZoomClose').addEventListener('click',closeImgZoom);
 
 
 /* ── i18n Data Load Setup ── */
@@ -860,7 +874,7 @@ function initializeData(){
           lv:(fb.lv||'').replace('{elem}',s.e),
           ca:(fb.ca||'').replace('{theme}',s.t)
         };
-        var kws=[s.e,s.n,num.label];
+        var kws=(window.LOCALE.minorKeywords||{})[key]||[s.e,s.n,num.label];
         c.push({id:id++,type:'minor',suitCode:s.code,numCode:num.code,keywords:kws,up:d.up,rv:d.rv,lv:d.lv,ca:d.ca});
       });
     });
@@ -904,22 +918,7 @@ window.addEventListener('DOMContentLoaded', initializeData);
 /* Service Worker 등록 */
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    var verMeta=document.querySelector('meta[name="app-version"]');
-    var appVer=verMeta?verMeta.getAttribute('content'):'1.0.0';
     navigator.serviceWorker.register('./sw.js')
-      .then(function(reg){
-        if(reg.active){
-          reg.active.postMessage({type:'SET_VERSION',version:appVer});
-        }
-        reg.addEventListener('updatefound',function(){
-          var sw=reg.installing;
-          if(sw) sw.addEventListener('statechange',function(){
-            if(sw.state==='installed'&&navigator.serviceWorker.controller){
-              sw.postMessage({type:'SET_VERSION',version:appVer});
-            }
-          });
-        });
-      })
       .catch(function(err){
         logger.error('SW 등록 실패:', err);
       });

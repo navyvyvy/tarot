@@ -1,228 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="1.0.0">
-<title>NORU</title>
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NORU">
-<link rel="apple-touch-icon" href="icon-192.svg">
-<link rel="icon" type="image/svg+xml" href="./icon-192.svg">
-<meta name="theme-color" content="#1a0848">
-<meta name="description" content="새벽 안개 속 노루처럼, 고요히 운명과 마주하다. 타로 카드 리딩과 탄생 카드.">
-<meta property="og:title" content="NORU — 달과 새벽의 타로">
-<meta property="og:description" content="새벽 안개 속 노루처럼, 고요히 운명과 마주하다.">
-<meta property="og:type" content="website">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Libre+Baskerville:ital@1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NORU 타로</title>
+  <meta name="description" content="새벽 안개 속 노루처럼, 고요히 운명과 마주하는 타로 리딩과 탄생 카드.">
+  <meta name="theme-color" content="#170d2d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NORU">
+  <meta property="og:title" content="NORU - 달과 새벽의 타로">
+  <meta property="og:description" content="새벽 안개 속 노루처럼, 고요히 운명과 마주하다.">
+  <meta property="og:type" content="website">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+  <link rel="apple-touch-icon" href="icon-192.svg">
+  <link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
-<canvas id="cvs"></canvas>
-<div class="neb"></div>
-<div class="wrap">
+  <canvas id="cvs" aria-hidden="true"></canvas>
+  <div class="neb" aria-hidden="true"></div>
 
-<header>
-  <span class="logo-ico" id="logoMoon"></span>
-  <h1>NORU</h1>
-  <p class="tagline" data-i18n="ui.appTagline">새벽 안개 속 노루처럼, 고요히 운명과 마주하다</p>
-</header>
+  <div class="wrap">
+    <header>
+      <span class="logo-ico" id="logoMoon" aria-hidden="true"></span>
+      <h1>NORU</h1>
+      <p class="tagline" data-i18n="ui.appTagline">새벽 안개 속 노루처럼, 고요히 운명과 마주하다</p>
+    </header>
 
-<!-- S0 시작 -->
-<div class="step ON" id="s0" role="main" aria-label="시작 화면">
-  <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepStart">시작하기</span><span class="step-line"></span></div>
-  <h2>오늘 무엇을 보시겠어요?</h2>
-  <div class="mode-row">
-    <div class="mode-card" id="mT">
-      <span class="mode-icon">🃏</span>
-      <div class="mode-name" data-i18n="ui.modeTarot">타로 리딩</div>
-      <div class="mode-desc" data-i18n="ui.modeTarotDesc">카드를 뽑아 운명의 메시지를 읽는다</div>
-    </div>
-    <div class="mode-card" id="mB">
-      <span class="mode-icon">✨</span>
-      <div class="mode-name" data-i18n="ui.modeBirth">탄생 카드</div>
-      <div class="mode-desc" data-i18n="ui.modeBirthDesc">생년월일로 나의 타로 카드를 찾는다</div>
-    </div>
-  </div>
-</div>
+    <main id="appMain">
+      <section class="step ON" id="s0" aria-labelledby="s0title">
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepStart">시작하기</span><span class="step-line"></span></div>
+        <h2 id="s0title" tabindex="-1">오늘은 무엇을 살펴볼까요?</h2>
+        <div class="mode-row">
+          <button class="mode-card" id="mT" type="button">
+            <span class="mode-visual"><img src="assets/RWS_Tarot_18_Moon.webp" alt="" loading="eager"></span>
+            <span class="mode-copy"><strong class="mode-name" data-i18n="ui.modeTarot">타로 리딩</strong><span class="mode-desc" data-i18n="ui.modeTarotDesc">카드를 뽑아 지금 필요한 메시지를 읽어보세요</span></span>
+          </button>
+          <button class="mode-card" id="mB" type="button">
+            <span class="mode-visual"><img src="assets/RWS_Tarot_19_Sun.webp" alt="" loading="eager"></span>
+            <span class="mode-copy"><strong class="mode-name" data-i18n="ui.modeBirth">탄생 카드</strong><span class="mode-desc" data-i18n="ui.modeBirthDesc">생년월일로 나의 탄생 카드를 알아보세요</span></span>
+          </button>
+        </div>
+      </section>
 
-<!-- S1 덱 선택 -->
-<div class="step" id="s1" role="region" aria-label="덱 선택">
-  <div class="step-hd">
-    <span class="step-lbl" data-i18n="ui.stepDeck">I · 덱 선택</span>
-    <span class="step-line"></span>
-    <button class="back-btn" id="bk1" aria-label="처음으로 돌아가기">← 처음으로</button>
-  </div>
-  <h2>어떤 덱으로 점을 치시겠어요?</h2>
-  <div class="deck-row">
-    <button class="deck-btn is-active" data-deck="major" role="radio" aria-checked="true" aria-label="메이저 아르카나 덱">
-      <span class="deck-icon">✨</span>메이저 아르카나<div class="deck-sub">22장 · 삶의 큰 흐름</div>
-    </button>
-    <button class="deck-btn" data-deck="minor" role="radio" aria-checked="false" aria-label="마이너 아르카나 덱">
-      <span class="deck-icon">🃏</span>마이너 아르카나<div class="deck-sub">56장 · 일상의 에너지</div>
-    </button>
-    <button class="deck-btn" data-deck="all" role="radio" aria-checked="false" aria-label="전체 78장 덱">
-      <span class="deck-icon">🌟</span>전체 78장<div class="deck-sub">완전한 점술</div>
-    </button>
-  </div>
-  <button class="btn-go" id="toS2">스프레드 선택 →</button>
-</div>
+      <section class="step" id="s1" aria-labelledby="s1title" hidden>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepDeck">I · 덱 선택</span><span class="step-line"></span><button class="back-btn" id="bk1" type="button">← 처음으로</button></div>
+        <h2 id="s1title" tabindex="-1">어떤 덱으로 카드를 펼쳐볼까요?</h2>
+        <fieldset class="choice-fieldset">
+          <legend class="sr-only">타로 덱 선택</legend>
+          <div class="deck-row">
+            <label class="deck-btn"><input class="choice-input deck-input" type="radio" name="deck" value="major" checked><strong><span class="deck-count">22</span>메이저 아르카나</strong><span class="deck-sub">삶의 큰 흐름</span></label>
+            <label class="deck-btn"><input class="choice-input deck-input" type="radio" name="deck" value="minor"><strong><span class="deck-count">56</span>마이너 아르카나</strong><span class="deck-sub">일상 속 감정과 선택</span></label>
+            <label class="deck-btn"><input class="choice-input deck-input" type="radio" name="deck" value="all"><strong><span class="deck-count">78</span>전체 덱</strong><span class="deck-sub">모든 카드를 함께</span></label>
+          </div>
+        </fieldset>
+        <button class="btn-go" id="toS2" type="button">스프레드 선택 <span aria-hidden="true">→</span></button>
+      </section>
 
-<!-- S2 스프레드 -->
-<div class="step" id="s2" role="region" aria-label="스프레드 선택">
-  <div class="step-hd">
-    <span class="step-lbl" data-i18n="ui.stepSpread">II · 스프레드</span>
-    <span class="step-line"></span>
-    <button class="back-btn" id="bk2" aria-label="덱 선택으로 돌아가기">← 덱 변경</button>
-  </div>
-  <h2>몇 장의 카드를 펼치시겠어요?</h2>
-  <div class="cnt-row">
-    <div class="count-btn is-active" data-n="1" role="radio" aria-checked="true" aria-label="1장 스프레드"><div class="count-circle">1</div><div class="count-name">원카드</div></div>
-    <div class="count-btn" data-n="3" role="radio" aria-checked="false" aria-label="3장 스프레드"><div class="count-circle">3</div><div class="count-name">쓰리카드</div></div>
-    <div class="count-btn" data-n="5" role="radio" aria-checked="false" aria-label="5장 스프레드"><div class="count-circle">5</div><div class="count-name">파이브크로스</div></div>
-    <div class="count-btn" data-n="7" role="radio" aria-checked="false" aria-label="7장 스프레드"><div class="count-circle">7</div><div class="count-name">매직세븐</div></div>
-    <div class="count-btn" data-n="10" role="radio" aria-checked="false" aria-label="10장 스프레드"><div class="count-circle">10</div><div class="count-name">켈틱크로스</div></div>
-  </div>
-  <div class="sp-info" id="spInfo"></div>
-  <div class="rev-setting">
-    <div class="rev-row">
-      <span class="rev-lbl" data-i18n="ui.revLabel">역방향 확률</span>
-      <span class="rev-val" id="revVal">50%</span>
-    </div>
-    <input type="range" class="rev-slider" id="revSlider" min="0" max="100" value="50" step="5" aria-label="역방향 카드 출현 확률" aria-valuetext="50%">
-    <div class="rev-tips">
-      <span data-i18n="ui.revTip0">0% 정방향만</span><span data-i18n="ui.revTip50">50% 전통 타로</span><span data-i18n="ui.revTip100">100% 역방향만</span>
-    </div>
-  </div>
-  <button class="btn-go" id="toS3" aria-label="카드 섞기 시작">카드 섞기 🔮</button>
-</div>
+      <section class="step" id="s2" aria-labelledby="s2title" hidden>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepSpread">II · 스프레드</span><span class="step-line"></span><button class="back-btn" id="bk2" type="button">← 덱 변경</button></div>
+        <h2 id="s2title" tabindex="-1">몇 장을 펼쳐볼까요?</h2>
+        <fieldset class="choice-fieldset">
+          <legend class="sr-only">스프레드 카드 수 선택</legend>
+          <div class="cnt-row">
+            <label class="count-btn"><input class="choice-input count-input" type="radio" name="count" value="1" checked><span class="count-circle">1</span><span class="count-name">원 카드</span></label>
+            <label class="count-btn"><input class="choice-input count-input" type="radio" name="count" value="3"><span class="count-circle">3</span><span class="count-name">쓰리 카드</span></label>
+            <label class="count-btn"><input class="choice-input count-input" type="radio" name="count" value="5"><span class="count-circle">5</span><span class="count-name">파이브 크로스</span></label>
+            <label class="count-btn"><input class="choice-input count-input" type="radio" name="count" value="7"><span class="count-circle">7</span><span class="count-name">매직 세븐</span></label>
+            <label class="count-btn"><input class="choice-input count-input" type="radio" name="count" value="10"><span class="count-circle">10</span><span class="count-name">켈틱 크로스</span></label>
+          </div>
+        </fieldset>
+        <div class="sp-info" id="spInfo" aria-live="polite"></div>
+        <div class="rev-setting">
+          <div class="rev-row"><label class="rev-lbl" for="revSlider" data-i18n="ui.revLabel">역방향 카드 비율</label><output class="rev-val" id="revVal" for="revSlider">50%</output></div>
+          <input type="range" class="rev-slider" id="revSlider" min="0" max="100" value="50" step="5" aria-valuetext="50%">
+          <div class="rev-tips"><span data-i18n="ui.revTip0">0% 정방향</span><span data-i18n="ui.revTip50">50% 정·역방향</span><span data-i18n="ui.revTip100">100% 역방향</span></div>
+        </div>
+        <button class="btn-go" id="toS3" type="button">카드 섞기</button>
+      </section>
 
-<!-- S3 카드 선택 -->
-<div class="step" id="s3" role="region" aria-label="카드 선택">
-  <div class="step-hd">
-    <span class="step-lbl" data-i18n="ui.stepPick">III · 카드 선택</span>
-    <span class="step-line"></span>
-    <button class="back-btn" id="bk3" aria-label="스프레드 선택으로 돌아가기">← 스프레드 변경</button>
-  </div>
-  <p class="hint" id="hint">마음이 이끄는 카드를 <em>탭</em>하세요 · <em>드래그</em>로 탐색</p>
-  <div class="prog">
-    <div class="prog-bg" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="카드 선택 진행률"><div class="prog-fill" id="pFill"></div></div>
-    <div class="prog-txt" id="pTxt">0 / 0</div>
-  </div>
-  <div class="track-wrap">
-    <button class="arr L H" id="arrL">◀</button>
-    <div class="track-fade"><div class="ctrack" id="ctrack" role="list" aria-label="타로 카드 덱"></div></div>
-    <button class="arr R H" id="arrR">▶</button>
-  </div>
-  <button class="btn-rev" id="btnRev">✦ &nbsp;선택한 카드 펼쳐보기&nbsp; ✦</button>
-</div>
+      <section class="step" id="s3" aria-labelledby="s3title" hidden>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepPick">III · 카드 선택</span><span class="step-line"></span><button class="back-btn" id="bk3" type="button">← 스프레드 변경</button></div>
+        <h2 class="sr-only" id="s3title" tabindex="-1">카드 선택</h2>
+        <p class="hint" id="hint">마음이 가는 카드를 <em>골라보세요</em>. 옆으로 밀면 다른 카드도 볼 수 있습니다.</p>
+        <div class="prog"><div class="prog-bg" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="카드 선택 진행률"><div class="prog-fill" id="pFill"></div></div><div class="prog-txt" id="pTxt">0 / 0</div></div>
+        <div class="track-wrap">
+          <button class="arr L H" id="arrL" type="button" aria-label="이전 카드">◀</button>
+          <div class="track-fade"><div class="ctrack" id="ctrack" role="group" aria-label="타로 카드 덱"></div></div>
+          <button class="arr R H" id="arrR" type="button" aria-label="다음 카드">▶</button>
+        </div>
+        <button class="btn-rev" id="btnRev" type="button">선택한 카드 펼치기</button>
+      </section>
 
-<!-- S4 결과 -->
-<div class="step" id="s4" role="region" aria-label="리딩 결과">
-  <div class="step-hd">
-    <span class="step-lbl" data-i18n="ui.stepResult">IV · 리딩 결과</span>
-    <span class="step-line"></span>
-    <button class="back-btn" id="bk4" aria-label="카드 다시 선택하기">← 카드 다시 선택</button>
+      <section class="step" id="s4" aria-labelledby="s4title" hidden>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepResult">IV · 리딩 결과</span><span class="step-line"></span><button class="back-btn" id="bk4" type="button">← 카드 다시 선택</button></div>
+        <h2 id="s4title" tabindex="-1"></h2>
+        <p class="result-desc" id="s4desc"></p>
+        <div id="s4grid"></div>
+        <div class="extra" id="extra"><div class="extra-lbl">새벽이 전하는 추가 메시지</div><div class="extra-grid" id="extraGrid"></div></div>
+        <button class="btn-more" id="btnMore" type="button">추가 카드 뽑기</button>
+        <button class="btn-reset" id="rst4" type="button">처음으로</button>
+      </section>
+
+      <section class="step" id="s5" aria-labelledby="s5title" hidden>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepBirth">탄생 타로카드</span><span class="step-line"></span><button class="back-btn" id="bk5" type="button">← 처음으로</button></div>
+        <h2 id="s5title" tabindex="-1">생년월일을 선택해 주세요</h2>
+        <div class="bth-row">
+          <div class="bth-grp birth-year"><label class="bth-lbl" for="bYear" data-i18n="ui.birthYearLabel">출생 연도</label><select class="bth-sel" id="bYear"></select></div>
+          <div class="bth-grp"><label class="bth-lbl" for="bMonth" data-i18n="ui.birthMonthLabel">월</label><select class="bth-sel" id="bMonth"><option value="">월</option><option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select></div>
+          <div class="bth-grp"><label class="bth-lbl" for="bDay" data-i18n="ui.birthDayLabel">일</label><select class="bth-sel" id="bDay"><option value="">일</option></select></div>
+        </div>
+        <button class="btn-go" id="calcBtn" type="button">나의 탄생 카드 찾기</button>
+        <div class="birth-res" id="birthRes" aria-live="polite"></div>
+        <button class="btn-reset" id="rst5" type="button">처음으로</button>
+      </section>
+    </main>
   </div>
-  <h2 id="s4title"></h2>
-  <p id="s4desc" style="font-size:.8rem;color:var(--dim);line-height:1.72;margin-bottom:14px;margin-top:-8px"></p>
-  <div id="s4grid"></div>
-  <div class="extra" id="extra">
-    <div class="extra-lbl">새벽이 전하는 추가 메시지</div>
-    <div class="extra-grid" id="extraGrid"></div>
-  </div>
-  <button class="btn-more" id="btnMore">✦ &nbsp;새벽이 아직 할 말이 남아 있습니다&nbsp; ✦</button>
-  <button class="btn-reset" id="rst4">↩ 처음으로</button>
-</div>
 
-<!-- S5 탄생 카드 -->
-<div class="step" id="s5" role="region" aria-label="탄생 카드">
-  <div class="step-hd">
-    <span class="step-lbl" data-i18n="ui.stepBirth">탄생 타로카드</span>
-    <span class="step-line"></span>
-    <button class="back-btn" id="bk5" aria-label="처음으로 돌아가기">← 처음으로</button>
-  </div>
-  <h2>생년월일을 선택해주세요</h2>
-  <div class="bth-row">
-    <div class="bth-grp" style="flex:2">
-      <div class="bth-lbl" data-i18n="ui.birthYearLabel">출생 연도</div>
-      <select class="bth-sel" id="bYear"></select>
-    </div>
-    <div class="bth-grp">
-      <div class="bth-lbl" data-i18n="ui.birthMonthLabel">월</div>
-      <select class="bth-sel" id="bMonth">
-        <option value="">월</option>
-        <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
-        <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
-        <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
-        <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-      </select>
-    </div>
-    <div class="bth-grp">
-      <div class="bth-lbl" data-i18n="ui.birthDayLabel">일</div>
-      <select class="bth-sel" id="bDay"><option value="">일</option></select>
-    </div>
-  </div>
-  <button class="btn-go" id="calcBtn" aria-label="탄생 카드 계산하기" style="margin-top:14px">나의 탄생 카드 찾기 ✨</button>
-  <div class="birth-res" id="birthRes"></div>
-  <button class="btn-reset" id="rst5">↩ 처음으로</button>
-</div>
+  <div class="ov" id="ovSh" role="status" aria-live="polite"><div class="sh-row" aria-hidden="true"><div class="sh-c"></div><div class="sh-c"></div><div class="sh-c"></div></div><div class="ov-txt">카드를 섞고 있어요...</div><div class="ov-sub">눈을 감고 질문을 천천히 떠올려 보세요</div></div>
+  <div class="ov" id="ovRv" role="status" aria-live="polite"><div class="rv-row" aria-hidden="true"><div class="rv-c"></div><div class="rv-c"></div><div class="rv-c"></div><div class="rv-c"></div></div><div class="ov-txt">카드의 메시지를 읽고 있어요...</div><div class="ov-sub">잠시만 기다려 주세요</div></div>
 
-</div><!-- /wrap -->
+  <dialog class="img-zoom-bg" id="imgZoom" aria-label="카드 이미지 확대"><button class="img-zoom-close" id="imgZoomClose" type="button" aria-label="확대 이미지 닫기">닫기</button><div class="img-zoom-wrap" id="imgZoomWrap"></div></dialog>
+  <dialog class="mbg" id="mbg" aria-labelledby="mName"><div class="msh"><div class="m-grip" aria-hidden="true"></div><div class="m-top"><div class="m-imgbox" id="mImgBox"></div><div class="m-meta"><div class="m-arc" id="mArc"></div><h2 class="m-nm" id="mName"></h2><div id="mRevTag"></div><div class="m-kws" id="mKws"></div></div></div><div class="m-body" id="mBody"></div></div><button class="m-close" id="mClose" type="button" autofocus>닫기</button></dialog>
+  <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
 
-<!-- 셔플 오버레이 -->
-<div class="ov" id="ovSh">
-  <div class="sh-row">
-    <div class="sh-c">🔮</div><div class="sh-c">⭐</div><div class="sh-c">🌅</div>
-  </div>
-  <div class="ov-txt">운명의 패를 섞는 중...</div>
-  <div class="ov-sub">눈을 감고 질문을 떠올려보세요</div>
-</div>
-
-<!-- 공개 오버레이 -->
-<div class="ov" id="ovRv">
-  <div class="rv-row">
-    <div class="rv-c">🌒</div><div class="rv-c">✨</div>
-    <div class="rv-c">⭐</div><div class="rv-c">🌅</div>
-  </div>
-  <div class="ov-txt">카드의 목소리를 읽는 중...</div>
-  <div class="ov-sub">새벽의 에너지가 흐르고 있습니다</div>
-</div>
-
-<!-- 이미지 확대 오버레이 -->
-<div class="img-zoom-bg" id="imgZoom" role="dialog" aria-modal="true" aria-label="카드 이미지 확대">
-  <div class="img-zoom-wrap" id="imgZoomWrap"></div>
-</div>
-
-<!-- 모달 -->
-<div class="mbg" id="mbg" role="dialog" aria-modal="true" aria-labelledby="mName">
-  <div class="msh">
-    <div class="m-grip"></div>
-    <div class="m-top">
-      <div class="m-imgbox" id="mImgBox"></div>
-      <div class="m-meta">
-        <div class="m-arc" id="mArc"></div>
-        <div class="m-nm" id="mName"></div>
-        <div id="mRevTag"></div>
-        <div class="m-kws" id="mKws"></div>
-      </div>
-    </div>
-    <div class="m-body" id="mBody"></div>
-    <button class="m-close" id="mClose" aria-label="카드 상세 닫기">닫기</button>
-  </div>
-</div>
-
-<!-- 에러 토스트 -->
-<div class="toast" id="toast" role="alert" aria-live="polite"></div>
-
-<script src="card.js"></script>
-<script src="locale/ko.js"></script>
-<script src="app.js"></script>
+  <script src="card.js"></script>
+<script src="locale/ko.js?v=18"></script>
+  <script src="core.js"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

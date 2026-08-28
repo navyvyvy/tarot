@@ -1,6 +1,8 @@
 {
-  "dependencies": {
-    "axios": "^1.16.1",
-    "sharp": "^0.34.5"
+  "name": "noru-tarot",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check app.js && node --check core.js && node --check card.js && node --check locale/ko.js && node --check sw.js"
   }
 }
