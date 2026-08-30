@@ -20,7 +20,6 @@ function cardImgUrl(card) {
   return `./assets/${filename}`;
 }
 
-
 /* Card back — ornate crescent moon design */
 var CARD_BACK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 600" preserveAspectRatio="xMidYMid slice">'
 +'<defs>'
@@ -135,7 +134,10 @@ function makeImg(card, isRev) {
       if (img.parentNode) img.parentNode.replaceChild(ph, img);
     };
     return img;
-  } catch(e) { logger.error('카드 이미지 생성 오류:', e); }
+  } catch(e) {
+    logger.error('카드 이미지 생성 오류:', e);
+    return document.createElement('span');
+  }
 }
 
 function makeBackSVG(){
@@ -200,9 +202,8 @@ function showToast(msg, duration){
   _toastTimer=setTimeout(function(){el.classList.remove('ON');},duration||3000);
 }
 
-var _DEV = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
 var logger = {
-  error: function(msg, err) { if(_DEV) console.error('[NORU]', msg, err||''); }
+  error: function(msg, err) { console.error('[NORU]', msg, err||''); }
 };
 
 function cardName(card){
@@ -218,7 +219,7 @@ function cardName(card){
   return fmt.replace('{suit}',suit.n).replace('{num}',num.label);
 }
 
-var S=window.NORU.state={mode:'',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5};
+var S=window.NORU.state={mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5};
 
 function deckCards(){
   return S.deck==='major'
@@ -232,8 +233,13 @@ function reshuffle(cards){
   S.shuffled=CORE.shuffleDeck(cards||deckCards(),S.revProb);
 }
 
-function show(id){
-  ['s0','s1','s2','s3','s4','s5'].forEach(function(s){
+var _historyReady=false;
+var _historyDepth=0;
+var _historySilent=false;
+
+function show(id,historyMode){
+  if(id==='s0')clearMainSelections();
+  ['s0','s1','s2','s3','s4','s5','s6'].forEach(function(s){
     var step=document.getElementById(s);
     var active=s===id;
     step.hidden=!active;
@@ -243,6 +249,35 @@ function show(id){
   requestAnimationFrame(function(){
     var title=document.querySelector('#'+id+' h2[tabindex="-1"]');
     if(title)title.focus({preventScroll:true});
+  });
+  if(_historyReady&&!_historySilent){
+    if(historyMode==='replace'){
+      if(id==='s0'&&!S.mode)_historyDepth=0;
+      history.replaceState({noruStep:id,noruDepth:_historyDepth},'',location.href);
+    }else if(!history.state||history.state.noruStep!==id){
+      _historyDepth+=1;
+      history.pushState({noruStep:id,noruDepth:_historyDepth},'',location.href);
+    }
+  }
+}
+
+function goBack(fallback){
+  if(_historyReady&&history.state&&history.state.noruDepth>0)history.back();
+  else show(fallback,'replace');
+}
+
+function initHistory(){
+  var current=document.querySelector('.step.ON');
+  _historyDepth=0;
+  history.replaceState({noruStep:current?current.id:'s0',noruDepth:0},'',location.href);
+  _historyReady=true;
+  window.addEventListener('popstate',function(event){
+    var id=event.state&&event.state.noruStep||'s0';
+    if(!S.mode&&id!=='s0')id='s0';
+    _historyDepth=event.state&&event.state.noruDepth||0;
+    _historySilent=true;
+    show(id);
+    _historySilent=false;
   });
 }
 
@@ -255,18 +290,47 @@ function renderSpInfo(){
     var el=document.getElementById('spInfo');
     el.className='sp-info ON';
     el.innerHTML='<h3>'+sp.title+'</h3><p>'+sp.desc+'</p><div class="sp-tags">'+tags+'</div>'+buildPreview(S.count,sp.pos);
-  }catch(e){logger.error('스프레드 정보 렌더링 오류:',e);}
+  }catch(e){
+    logger.error('스프레드 정보 렌더링 오류:',e);
+    showToast(window.LOCALE&&window.LOCALE.ui.errorRender||'화면을 표시하는 중 문제가 생겼습니다.');
+  }
 }
 
 function selMode(m){
   S.mode=m;
   document.getElementById('mT').classList.toggle('is-selected',m==='tarot');
   document.getElementById('mB').classList.toggle('is-selected',m==='birth');
+  document.getElementById('mD').classList.remove('is-selected');
   show(m==='tarot'?'s1':'s5');
 }
 
-document.getElementById('mT').addEventListener('click',function(){selMode('tarot');});
+function topicInfo(){
+  return window.LOCALE.topics[S.topic]||window.LOCALE.topics.general;
+}
+function updateTopicButtons(){
+  document.querySelectorAll('.topic-btn').forEach(function(button){
+    var active=button.dataset.topic===S.topic;
+    button.classList.toggle('is-selected',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
+}
+function clearMainSelections(){
+  document.querySelectorAll('.mode-card, .topic-btn').forEach(function(button){
+    button.classList.remove('is-selected');
+    if(button.classList.contains('topic-btn'))button.setAttribute('aria-pressed','false');
+  });
+}
+function selectTopic(topic){
+  S.topic=window.LOCALE.topics[topic]?topic:'general';
+  updateTopicButtons();
+  selMode('tarot');
+}
+
+document.getElementById('mT').addEventListener('click',function(){selectTopic('general');});
 document.getElementById('mB').addEventListener('click',function(){selMode('birth');});
+document.querySelectorAll('.topic-btn').forEach(function(button){
+  button.addEventListener('click',function(){selectTopic(button.dataset.topic);});
+});
 
 document.querySelectorAll('.deck-input').forEach(function(input){
   input.addEventListener('change',function(){
@@ -287,11 +351,11 @@ document.querySelectorAll('.count-input').forEach(function(input){
   });
 });
 
-document.getElementById('bk1').addEventListener('click',function(){show('s0');});
-document.getElementById('bk2').addEventListener('click',function(){show('s1');});
+document.getElementById('bk1').addEventListener('click',function(){goBack('s0');});
+document.getElementById('bk2').addEventListener('click',function(){goBack('s1');});
 document.getElementById('bk3').addEventListener('click',function(){
-  if(S.adding){S.adding=false;S.selected=[];show('s4');}
-  else{S.selected=[];S.shuffled=[];show('s2');}
+  if(S.adding){S.adding=false;S.selected=[];goBack('s4');}
+  else{S.selected=[];S.shuffled=[];goBack('s2');}
 });
 document.getElementById('bk4').addEventListener('click',function(){
   S.selected=[];
@@ -301,9 +365,9 @@ document.getElementById('bk4').addEventListener('click',function(){
   document.getElementById('btnRev').className='btn-rev';
   document.getElementById('btnRev').textContent='선택한 카드 펼치기';
   document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
-  buildTrack();show('s3');
+  buildTrack();goBack('s3');
 });
-document.getElementById('bk5').addEventListener('click',function(){show('s0');});
+document.getElementById('bk5').addEventListener('click',function(){goBack('s0');});
 
 document.getElementById('toS2').addEventListener('click',function(){renderSpInfo();show('s2');});
 document.getElementById('toS3').addEventListener('click',function() {
@@ -312,7 +376,7 @@ document.getElementById('toS3').addEventListener('click',function() {
 });
 
 function resetAll(){
-  Object.assign(S,{mode:'',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5});
+  Object.assign(S,{mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5});
   document.querySelector('.deck-input[value="major"]').checked=true;
   document.querySelector('.count-input[value="1"]').checked=true;
   document.getElementById('revSlider').value=50;
@@ -321,6 +385,7 @@ function resetAll(){
   document.getElementById('spInfo').innerHTML='';
   document.getElementById('ctrack').innerHTML='';
   document.getElementById('s4grid').innerHTML='';
+  document.getElementById('readingOverview').textContent='';
   document.getElementById('extraGrid').innerHTML='';
   document.getElementById('extra').style.display='none';
   document.getElementById('btnRev').className='btn-rev';
@@ -332,12 +397,14 @@ function resetAll(){
   document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow','0');
   document.getElementById('mT').classList.remove('is-selected');
   document.getElementById('mB').classList.remove('is-selected');
+  document.getElementById('mD').classList.remove('is-selected');
+  updateTopicButtons();
   document.getElementById('birthRes').className='birth-res';
   document.getElementById('birthRes').innerHTML='';
   document.getElementById('bYear').value='';
   document.getElementById('bMonth').value='';
   document.getElementById('bDay').value='';
-  show('s0');
+  show('s0','replace');
 }
 document.getElementById('rst4').addEventListener('click',resetAll);
 document.getElementById('rst5').addEventListener('click',resetAll);
@@ -381,12 +448,12 @@ function buildTrack() {
       el.className = 'track-card';
       el.dataset.i = idx;
       el.setAttribute('aria-pressed','false');
-      el.setAttribute('aria-label',(idx+1)+'번 카드 선택');
+      el.setAttribute('aria-label','뒷면 카드 선택');
 
       const back = makeBackSVG();
       back.style.cssText = 'position:absolute;inset:0;pointer-events:none';
 
-      el.innerHTML = `<span class="track-card-num">#${('00'+(idx+1)).slice(-3)}</span>`;
+      el.innerHTML = '<span class="track-card-order" aria-hidden="true"></span>';
       el.appendChild(back);
 
       setTimeout(function() {
@@ -399,7 +466,10 @@ function buildTrack() {
 
     tr.appendChild(fragment);
     setTimeout(updArr, ANIM.ARR_UPD);
-  } catch(e) { logger.error('카드 트랙 빌드 오류:', e); }
+  } catch(e) {
+    logger.error('카드 트랙 빌드 오류:', e);
+    showToast(window.LOCALE&&window.LOCALE.ui.errorRender||'화면을 표시하는 중 문제가 생겼습니다.');
+  }
 }
 
 (function initTrackEvents(){
@@ -419,6 +489,7 @@ function pick(idx,el){
     var p=S.selected.indexOf(idx);
     if(p>-1){S.selected.splice(p,1);el.classList.remove('is-selected');el.setAttribute('aria-pressed','false');}
     else{S.selected.push(idx);el.classList.add('is-selected');el.setAttribute('aria-pressed','true');}
+    syncPickOrder();
     var n=S.selected.length;
     var pct=n===0?0:100;
     document.getElementById('pFill').style.width=pct+'%';
@@ -438,8 +509,23 @@ function pick(idx,el){
     el.classList.add('is-selected');
     el.setAttribute('aria-pressed','true');
   }
+  syncPickOrder();
   updProg();
   document.getElementById('btnRev').classList.toggle('ON',S.selected.length===S.count);
+}
+
+function syncPickOrder(){
+  var cards=document.querySelectorAll('.track-card');
+  cards.forEach(function(card){
+    card.querySelector('.track-card-order').textContent='';
+    card.setAttribute('aria-label','뒷면 카드 선택');
+  });
+  S.selected.forEach(function(idx,order){
+    var card=cards[idx];
+    if(!card)return;
+    card.querySelector('.track-card-order').textContent=(order+1)+'번째 카드';
+    card.setAttribute('aria-label','스프레드 '+(order+1)+'번째 카드 선택 취소');
+  });
 }
 
 function updProg(){
@@ -472,6 +558,7 @@ document.getElementById('btnRev').addEventListener('click',function(){
     var base=S.revealed.length;
     nc.forEach(function(c){S.revealed.push(c);});
     S.adding=false;S.selected=[];
+    renderReadingOverview();
     document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
     document.getElementById('btnRev').textContent='선택한 카드 펼치기';
     var ex=document.getElementById('extra');ex.style.display='block';
@@ -491,15 +578,22 @@ function doReveal(){
     var SP=window.LOCALE.spreads;
     S.revealed=S.selected.map(function(i){return S.shuffled[i];});
     var sp=SP[S.count];
+    document.getElementById('s4topic').textContent=topicInfo().label+' 주제';
     document.getElementById('s4title').textContent=sp.title;
     document.getElementById('s4desc').textContent=sp.desc;
     var g=document.getElementById('s4grid');g.innerHTML='';
     buildGrid(S.revealed,sp,g);
+    renderReadingOverview();
     show('s4');refreshMore();
   }catch(e){
     logger.error('카드 공개 오류:',e);
     showToast(window.LOCALE&&window.LOCALE.ui.errorReveal||'카드를 공개하는 중 오류가 발생했습니다.');
   }
+}
+
+function renderReadingOverview(){
+  var el=document.getElementById('readingOverview');
+  el.textContent=window.NORU.readingOverview?window.NORU.readingOverview():'';
 }
 
 function mkCard(card, lbl, idx) {
@@ -707,154 +801,11 @@ function renderBirth(bp){
   }
 }
 
-/* ── MODAL ── */
-function openModal(card) {
-  try {
-    const ALL=window.LOCALE.allCards||[];
-    const full = ALL.find(c => c.id === card.id) || card;
-    const box = document.getElementById('mImgBox');
-
-    box.innerHTML = `
-      <button class="modal-img-wrapper${card.isRev ? ' is-reversed-image' : ''}" type="button" aria-label="카드 이미지 확대"></button>
-    `;
-    const wrap = box.querySelector('.modal-img-wrapper');
-    wrap.appendChild(makeImg(card, false));
-    wrap.addEventListener('click', (e) => { e.stopPropagation(); openImgZoom(card); });
-
-    const L = window.LOCALE.ui;
-    const symbolismData = window.LOCALE.symbolism || {};
-    const symbolism = full.type === 'major'
-      ? (symbolismData.major || [])[full.id]
-      : (symbolismData.minor || {})[`${full.suitCode}.${full.numCode}`];
-    const suitObj = window.LOCALE.suits ? window.LOCALE.suits.find(s => s.code === full.suitCode) : null;
-    const numberObj = window.LOCALE.numbers ? window.LOCALE.numbers.find(n => n.code === full.numCode) : null;
-    const majorNote = full.type === 'major' ? ((window.LOCALE.readingNotes || {}).major || [])[full.id] : null;
-    const readingKey = majorNote
-      ? majorNote.focus
-      : `${suitObj.guide} ${numberObj.label} 단계는 ${numberObj.meaning}을 뜻합니다.`;
-    const reflection = majorNote
-      ? majorNote.question
-      : numberObj.question.replace('{theme}', suitObj.t);
-    const reverseLove = suitObj ? suitObj.reverseLove : L.modalMajorReverseLove;
-    const reverseCareer = suitObj ? suitObj.reverseCareer : L.modalMajorReverseCareer;
-    document.getElementById('mArc').textContent = (full.type === 'major' || !full.suitCode)
-      ? `${L.modalArcMajor} · ${L.majorNumPrefix || 'No.'}${full.number}`
-      : `${L.modalArcMinor} · ${suitObj ? suitObj.n : ''}`;
-    document.getElementById('mName').textContent = cardName(full);
-    document.getElementById('mRevTag').innerHTML = card.isRev ? `<span class="m-rev">${L.modalReversed}</span>` : '';
-    document.getElementById('mKws').innerHTML = full.keywords.map(k => `<span class="modal-kw">${k}</span>`).join('');
-
-    const body = document.getElementById('mBody');
-    body.innerHTML = `
-      <div class="modal-tabs" role="tablist" aria-label="${L.modalTabsLabel}" data-active="0">
-        <button class="modal-tab is-active" id="mTabSummary" type="button" role="tab" aria-selected="true" aria-controls="mPanelSummary" data-index="0">${L.modalTabSummary}</button>
-        <button class="modal-tab" id="mTabDirections" type="button" role="tab" aria-selected="false" aria-controls="mPanelDirections" data-index="1" tabindex="-1">${L.modalTabDirections}</button>
-        <button class="modal-tab" id="mTabContexts" type="button" role="tab" aria-selected="false" aria-controls="mPanelContexts" data-index="2" tabindex="-1">${L.modalTabContexts}</button>
-      </div>
-      <div class="modal-tab-stage">
-        <section class="modal-tab-panel is-active" id="mPanelSummary" role="tabpanel" aria-labelledby="mTabSummary">
-          ${symbolism ? `<section class="modal-read-section">
-            <h3 class="modal-section-title">${L.modalSectionSymbolism}</h3>
-            <p>${symbolism}</p>
-          </section>` : ''}
-          <section class="modal-read-section">
-            <h3 class="modal-section-title">${L.modalSectionReadingKey}</h3>
-            <p>${readingKey}</p>
-          </section>
-          <section class="modal-read-section">
-            <h3 class="modal-section-title">${L.modalSectionReflection}</h3>
-            <p class="modal-reflection">${reflection}</p>
-          </section>
-        </section>
-        <section class="modal-tab-panel" id="mPanelDirections" role="tabpanel" aria-labelledby="mTabDirections" hidden>
-          <div class="modal-direction-list">
-            <section class="modal-direction${card.isRev ? '' : ' is-current'}">
-              <div class="modal-direction-head"><strong>${L.modalSectionUpright}</strong>${card.isRev ? '' : `<span>${L.modalCurrentDirection}</span>`}</div>
-              <p>${full.up}</p>
-            </section>
-            <section class="modal-direction${card.isRev ? ' is-current is-reversed' : ''}">
-              <div class="modal-direction-head"><strong>${L.modalSectionReversed}</strong>${card.isRev ? `<span>${L.modalCurrentDirection}</span>` : ''}</div>
-              <p>${full.rv}</p>
-            </section>
-          </div>
-        </section>
-        <section class="modal-tab-panel" id="mPanelContexts" role="tabpanel" aria-labelledby="mTabContexts" hidden>
-          <section class="modal-context-card">
-            <h3 class="modal-section-title">${L.modalSectionLove}</h3>
-            <p>${full.lv || ''}</p>
-            ${card.isRev ? `<div class="modal-context-note"><strong>${L.modalReversedContext}</strong>${reverseLove}</div>` : ''}
-          </section>
-          <section class="modal-context-card">
-            <h3 class="modal-section-title">${L.modalSectionCareer}</h3>
-            <p>${full.ca || ''}</p>
-            ${card.isRev ? `<div class="modal-context-note"><strong>${L.modalReversedContext}</strong>${reverseCareer}</div>` : ''}
-          </section>
-        </section>
-      </div>
-    `;
-
-    const tabs = Array.from(body.querySelectorAll('.modal-tab'));
-    const panels = Array.from(body.querySelectorAll('.modal-tab-panel'));
-    const tabList = body.querySelector('.modal-tabs');
-    function selectTab(index, focus) {
-      tabs.forEach((tab, i) => {
-        const active = i === index;
-        tab.classList.toggle('is-active', active);
-        tab.setAttribute('aria-selected', String(active));
-        tab.tabIndex = active ? 0 : -1;
-        panels[i].classList.toggle('is-active', active);
-        panels[i].hidden = !active;
-      });
-      tabList.dataset.active = String(index);
-      if(focus) tabs[index].focus();
-    }
-    tabs.forEach((tab, index) => {
-      tab.addEventListener('click', () => selectTab(index, false));
-      tab.addEventListener('keydown', (e) => {
-        if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
-        e.preventDefault();
-        const next = e.key === 'Home' ? 0
-          : e.key === 'End' ? tabs.length - 1
-          : (index + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-        selectTab(next, true);
-      });
-    });
-
-    document.getElementById('mbg').showModal();
-  } catch(e) { logger.error('모달 오류:', e); }
-}
-
-document.getElementById('mbg').addEventListener('click',function(e){if(e.target===this)closeModal();});
-document.getElementById('mbg').addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();closeModal();}});
-document.getElementById('mClose').addEventListener('click',closeModal);
-function closeModal(){
-  var dialog=document.getElementById('mbg');
-  if(dialog.open)dialog.close();
-}
-
-/* ── IMAGE ZOOM ── */
-function openImgZoom(card){
-  var zw=document.getElementById('imgZoomWrap');
-  zw.innerHTML='';
-  var img=makeImg(card, card.isRev);
-  img.style.cssText='width:100%;height:auto;border-radius:12px;display:block;max-height:88vh;object-fit:contain;'
-    +(card.isRev?'transform:rotate(180deg)':'');
-  zw.appendChild(img);
-  document.getElementById('imgZoom').showModal();
-}
-function closeImgZoom(){
-  var dialog=document.getElementById('imgZoom');
-  if(dialog.open)dialog.close();
-}
-document.getElementById('imgZoom').addEventListener('click',function(e){if(e.target===this)closeImgZoom();});
-document.getElementById('imgZoom').addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();closeImgZoom();}});
-document.getElementById('imgZoomClose').addEventListener('click',closeImgZoom);
-
-
 /* ── i18n Data Load Setup ── */
 function initializeData(){
   if(!window.LOCALE) {
     logger.error("locale 로드 실패");
+    showToast('카드 데이터를 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
     return;
   }
   var MAJ=window.LOCALE.major;
@@ -887,6 +838,7 @@ function initializeData(){
   renderSpInfo();
   applyLocale();
   handleStartUrl();
+  initHistory();
 }
 
 function handleStartUrl(){
@@ -894,6 +846,7 @@ function handleStartUrl(){
   var mode=params.get('mode');
   if(mode==='tarot') selMode('tarot');
   else if(mode==='birth') selMode('birth');
+  else if(mode==='dictionary') document.getElementById('mD').click();
 }
 
 function applyLocale(){
@@ -921,6 +874,7 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js')
       .catch(function(err){
         logger.error('SW 등록 실패:', err);
+        showToast(window.LOCALE&&window.LOCALE.ui.errorOffline||'오프라인 저장 기능을 시작하지 못했습니다.');
       });
   });
 }

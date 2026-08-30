@@ -17,13 +17,36 @@ test('shuffleDeck shuffles copies without mutating the source', function() {
   assert.notEqual(shuffled[0], source[1]);
 });
 
-test('calculateBirthCard keeps the existing reduction and pair lookup', function() {
-  const pairs = { 12: { c: [12, 3], d: 'pair' } };
+test('calculateBirthCard keeps the reduction and resolves hidden pairs', function() {
+  const pairs = { 12: { c: [12, 3], d: 'pair' }, 9: { c: [18, 9], d: 'hidden pair' } };
   assert.deepEqual(core.calculateBirthCard(1990, 1, 1, pairs), pairs[12]);
+  assert.deepEqual(core.calculateBirthCard(2000, 1, 6, pairs), pairs[9]);
   assert.deepEqual(core.calculateBirthCard(2000, 1, 1, {}), {
     c: [4, 4],
     d: '두 카드의 에너지가 함께합니다.'
   });
+});
+
+test('summarizeReading counts directions and only reports a unique dominant suit', function() {
+  const reading = core.summarizeReading([
+    { type: 'major', isRev: true },
+    { type: 'minor', suitCode: 'cups', isRev: false },
+    { type: 'minor', suitCode: 'cups', isRev: false }
+  ], 'love', ['과거', '현재', '미래']);
+
+  assert.equal(reading.topic, 'love');
+  assert.equal(reading.cardCount, 3);
+  assert.equal(reading.majorCount, 1);
+  assert.equal(reading.reversedCount, 1);
+  assert.equal(reading.dominantSuit, 'cups');
+  assert.deepEqual(reading.entries.map(function(entry) { return entry.position; }), ['과거', '현재', '미래']);
+  assert.deepEqual(reading.entries.map(function(entry) { return entry.direction; }), ['reversed', 'upright', 'upright']);
+
+  const tie = core.summarizeReading([
+    { type: 'minor', suitCode: 'cups' },
+    { type: 'minor', suitCode: 'wands' }
+  ], 'general', []);
+  assert.equal(tie.dominantSuit, null);
 });
 
 test('all 78 configured card images exist locally', function() {
@@ -45,7 +68,8 @@ test('service worker shell references real project files', function() {
     assert.ok(fs.existsSync(path.join(__dirname, '..', localFile)), file);
   });
   assert.doesNotMatch(source, /cards\.js/);
-  assert.match(source, /Object\.values\(self\.CARD_CONFIG\)/);
+  assert.doesNotMatch(source, /CARD_ASSETS|Object\.values\(self\.CARD_CONFIG\)|APP_SHELL\.concat/);
+  assert.match(source, /cache\.addAll\(APP_SHELL\)/);
 });
 
 test('spread meanings and card symbolism stay complete', function() {
@@ -74,7 +98,11 @@ test('spread meanings and card symbolism stay complete', function() {
   assert.ok(Object.values(locale.minorKeywords).every(function(keywords) { return keywords.length >= 3; }));
   assert.ok(locale.suits.every(function(suit) { return suit.guide && suit.reverseLove && suit.reverseCareer; }));
   assert.ok(locale.numbers.every(function(number) { return number.meaning && number.question; }));
+  assert.deepEqual(Array.from(locale.birthPairs[9].c), [18, 9]);
+  assert.ok([1, 2, 3, 4, 5, 6, 7, 8, 9].every(function(number) { return locale.birthPairs[number].c.length === 2; }));
+  assert.ok(Object.values(locale.topics).every(function(topic) { return topic.label && topic.resultTitle && topic.summary; }));
 
   const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
-  assert.match(app, /\[\[2,2,1\],\[9,5,1\],\[4,1,2\],\[0,2,2\],\[1,3,2\],\[5,4,2\],\[8,5,2\],\[3,2,3\],\[7,5,3\],\[6,5,4\]\]/);
+  assert.doesNotMatch(app, /celtic-cross-pair|is-crossing/);
+  assert.match(app, /\[0,2,2\],\[1,3,2\]/);
 });

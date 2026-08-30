@@ -144,3 +144,5 @@ vite.config.ts.timestamp-*
 # Local writing/QA artifacts
 _workspace/
 .playwright-mcp/
+playwright-report/
+test-results/

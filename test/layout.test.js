@@ -43,14 +43,54 @@ test('main menu hover motion stays pointer-only and transform-based', function()
 });
 
 test('scrollbars stay hidden and card details use accessible tabs', function() {
-  const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const detail = fs.readFileSync(path.join(__dirname, '..', 'detail.js'), 'utf8');
 
   assert.match(css, /html, body, \.msh, \.ctrack, #s4grid\s*\{[^}]*scrollbar-width:\s*none/);
   assert.match(css, /\.msh\s*\{[^}]*overflow-y:\s*auto/);
   assert.match(css, /\.modal-tabs\s*\{[^}]*grid-template-columns:\s*repeat\(3/);
   assert.match(css, /\.modal-tabs\[data-active='2'\]::before/);
   assert.match(css, /@keyframes modal-tab-in/);
-  assert.match(app, /role="tablist"/);
-  assert.match(app, /role="tabpanel"/);
-  assert.match(app, /ArrowLeft.*ArrowRight/);
+  assert.match(detail, /role="tablist"/);
+  assert.match(detail, /role="tabpanel"/);
+  assert.match(detail, /ArrowLeft.*ArrowRight/);
+});
+
+test('card dictionary keeps equal cards and full-image artwork', function() {
+  assert.match(css, /\.dictionary-grid\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill/);
+  assert.match(css, /\.dictionary-frame\s*\{[^}]*aspect-ratio:\s*400\s*\/\s*691/);
+  assert.match(css, /\.dictionary-grid\s*\{[^}]*gap:/);
+  assert.match(css, /\.dictionary-group-title\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/);
+});
+
+test('topic presets and summary sheet stay compact and scrollable', function() {
+  const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const summary = fs.readFileSync(path.join(__dirname, '..', 'summary.js'), 'utf8');
+
+  assert.match(css, /\.topic-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4/);
+  assert.match(css, /@media[\s\S]*\.topic-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2/);
+  assert.match(css, /\.summary-body\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(index, /data-topic="general"/);
+  assert.match(index, /data-topic="love"/);
+  assert.match(index, /id="summaryDialog"/);
+  assert.doesNotMatch(index, /topic-btn is-selected/);
+  assert.doesNotMatch(summary, /메이저 카드가/);
+  assert.doesNotMatch(summary, /summary-stats/);
+  assert.match(summary, /summary-card-art/);
+  assert.match(summary, /cardImgUrl\(entry\.card\)/);
+  assert.match(summary, /wrapText\(ctx,entryText\(entry\)/);
+});
+
+test('spread choices preview their layouts and card picking keeps a tactile stage', function() {
+  const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+
+  assert.match(index, /count-preview preview-five/);
+  assert.match(index, /count-preview preview-seven/);
+  assert.match(index, /count-preview preview-ten/);
+  assert.match(css, /\.count-btn:has\(input:checked\)/);
+  assert.match(css, /\.track-card-order:not\(:empty\)\s*\{[^}]*font-size:\s*\.72rem/);
+  assert.match(app, /textContent=\(order\+1\)\+'번째 카드'/);
+  assert.doesNotMatch(app, /S\.shuffled\.length<\/small>/);
+  assert.match(index, /id="readingOverview"/);
+  assert.doesNotMatch(index, /카드는 결정을 대신하지 않습니다/);
 });

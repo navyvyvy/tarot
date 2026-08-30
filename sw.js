@@ -1,27 +1,24 @@
-importScripts('./card.js');
-
 const CACHE_PREFIX = 'noru-';
-const CACHE_NAME = 'noru-v18';
+const CACHE_NAME = 'noru-v28';
 const APP_SHELL = [
   './',
   './index.html',
-  './css/style.css?v=18',
-  './core.js',
-  './card.js',
-  './locale/ko.js?v=18',
-  './app.js?v=18',
+  './css/style.css?v=28',
+  './core.js?v=28',
+  './card.js?v=28',
+  './locale/ko.js?v=28',
+  './app.js?v=28',
+  './detail.js?v=28',
+  './dictionary.js?v=28',
+  './summary.js?v=28',
   './manifest.json',
   './icon-192.svg',
   './icon-512.svg'
 ];
-const CARD_ASSETS = Object.values(self.CARD_CONFIG).map(function(filename) {
-  return './assets/' + filename;
-});
-
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(function(cache) { return cache.addAll(APP_SHELL.concat(CARD_ASSETS)); })
+      .then(function(cache) { return cache.addAll(APP_SHELL); })
       .then(function() { return self.skipWaiting(); })
   );
 });
