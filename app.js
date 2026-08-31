@@ -34,7 +34,7 @@ var CARD_BACK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 600"
 +'<pattern id="dg" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
 +'<rect x="0" y="0" width="40" height="40" fill="none" stroke="#c8a448" stroke-width="0.3" stroke-opacity="0.1"/>'
 +'</pattern>'
-+'<mask id="bm"><circle cx="175" cy="255" r="72" fill="white"/><circle cx="205" cy="236" r="57" fill="black"/></mask>'
++'<mask id="bm"><circle cx="175" cy="300" r="72" fill="white"/><circle cx="205" cy="281" r="57" fill="black"/></mask>'
 +'<radialGradient id="mg" cx="38%" cy="38%" r="62%">'
 +'<stop offset="0%" stop-color="#f6ecb4" stop-opacity="0.95"/>'
 +'<stop offset="55%" stop-color="#e8d07a" stop-opacity="0.65"/>'
@@ -55,11 +55,11 @@ var CARD_BACK_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 600"
 +'</g>'
 +'<line x1="55" y1="100" x2="295" y2="100" stroke="#c8a448" stroke-width="0.5" stroke-opacity="0.2"/>'
 +'<circle cx="175" cy="100" r="2.5" fill="#c8a448" fill-opacity="0.3"/>'
-+'<circle cx="175" cy="255" r="88" fill="none" stroke="#c8a448" stroke-width="0.4" stroke-opacity="0.1"/>'
-+'<circle cx="175" cy="255" r="80" fill="none" stroke="#c8a448" stroke-width="0.3" stroke-opacity="0.08"/>'
-+'<circle cx="175" cy="255" r="75" fill="#c8a448" fill-opacity="0.04" mask="url(#bm)"/>'
-+'<circle cx="175" cy="255" r="72" fill="url(#mg)" mask="url(#bm)"/>'
-+'<circle cx="175" cy="255" r="72" fill="none" stroke="#e8d07a" stroke-width="1.3" stroke-opacity="0.6" mask="url(#bm)"/>'
++'<circle cx="175" cy="300" r="88" fill="none" stroke="#c8a448" stroke-width="0.4" stroke-opacity="0.1"/>'
++'<circle cx="175" cy="300" r="80" fill="none" stroke="#c8a448" stroke-width="0.3" stroke-opacity="0.08"/>'
++'<circle cx="175" cy="300" r="75" fill="#c8a448" fill-opacity="0.04" mask="url(#bm)"/>'
++'<circle cx="175" cy="300" r="72" fill="url(#mg)" mask="url(#bm)"/>'
++'<circle cx="175" cy="300" r="72" fill="none" stroke="#e8d07a" stroke-width="1.3" stroke-opacity="0.6" mask="url(#bm)"/>'
 +'<circle cx="104" cy="198" r="2" fill="#e8d07a" fill-opacity="0.65"/>'
 +'<circle cx="118" cy="178" r="1.2" fill="#c8a448" fill-opacity="0.45"/>'
 +'<circle cx="248" cy="188" r="1.8" fill="#e8d07a" fill-opacity="0.6"/>'
@@ -140,13 +140,14 @@ function makeImg(card, isRev) {
   }
 }
 
+var CARD_BACK_URL='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(CARD_BACK_SVG);
 function makeBackSVG(){
-  var div=document.createElement('div');
-  div.style.cssText='width:100%;height:100%;overflow:hidden';
-  div.innerHTML=CARD_BACK_SVG;
-  var svg=div.querySelector('svg');
-  if(svg)svg.style.cssText='width:100%;height:100%;display:block';
-  return div;
+  var img=document.createElement('img');
+  img.className='card-back-image';
+  img.src=CARD_BACK_URL;
+  img.alt='';
+  img.setAttribute('aria-hidden','true');
+  return img;
 }
 
 document.querySelectorAll('.sh-c,.rv-c').forEach(function(el){el.appendChild(makeBackSVG());});
@@ -237,6 +238,13 @@ var _historyReady=false;
 var _historyDepth=0;
 var _historySilent=false;
 
+function clearReadingParam(){
+  var url=new URL(location.href);
+  if(!url.searchParams.has('reading'))return;
+  url.searchParams.delete('reading');
+  history.replaceState(history.state,'',url);
+}
+
 function show(id,historyMode){
   if(id==='s0')clearMainSelections();
   ['s0','s1','s2','s3','s4','s5','s6'].forEach(function(s){
@@ -298,7 +306,6 @@ function renderSpInfo(){
 
 function selMode(m){
   S.mode=m;
-  document.getElementById('mT').classList.toggle('is-selected',m==='tarot');
   document.getElementById('mB').classList.toggle('is-selected',m==='birth');
   document.getElementById('mD').classList.remove('is-selected');
   show(m==='tarot'?'s1':'s5');
@@ -326,7 +333,6 @@ function selectTopic(topic){
   selMode('tarot');
 }
 
-document.getElementById('mT').addEventListener('click',function(){selectTopic('general');});
 document.getElementById('mB').addEventListener('click',function(){selMode('birth');});
 document.querySelectorAll('.topic-btn').forEach(function(button){
   button.addEventListener('click',function(){selectTopic(button.dataset.topic);});
@@ -358,6 +364,7 @@ document.getElementById('bk3').addEventListener('click',function(){
   else{S.selected=[];S.shuffled=[];goBack('s2');}
 });
 document.getElementById('bk4').addEventListener('click',function(){
+  clearReadingParam();
   S.selected=[];
   S.revealed=[];
   S.adding=false;
@@ -376,6 +383,7 @@ document.getElementById('toS3').addEventListener('click',function() {
 });
 
 function resetAll(){
+  clearReadingParam();
   Object.assign(S,{mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5});
   document.querySelector('.deck-input[value="major"]').checked=true;
   document.querySelector('.count-input[value="1"]').checked=true;
@@ -385,9 +393,13 @@ function resetAll(){
   document.getElementById('spInfo').innerHTML='';
   document.getElementById('ctrack').innerHTML='';
   document.getElementById('s4grid').innerHTML='';
+  document.getElementById('s4extraGrid').innerHTML='';
+  document.getElementById('resultExtras').hidden=true;
   document.getElementById('readingOverview').textContent='';
-  document.getElementById('extraGrid').innerHTML='';
-  document.getElementById('extra').style.display='none';
+  document.getElementById('readingCards').innerHTML='';
+  document.getElementById('extraReadings').innerHTML='';
+  document.getElementById('openExtraDetails').hidden=true;
+  ['readingDetails','extra'].forEach(function(id){var dialog=document.getElementById(id);if(dialog.open)dialog.close();});
   document.getElementById('btnRev').className='btn-rev';
   if(window.LOCALE) document.getElementById('btnRev').textContent=window.LOCALE.ui.revealBtn;
   if(window.LOCALE) document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
@@ -395,10 +407,7 @@ function resetAll(){
   document.getElementById('pFill').style.width='0%';
   document.getElementById('pTxt').textContent='0 / 0';
   document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow','0');
-  document.getElementById('mT').classList.remove('is-selected');
-  document.getElementById('mB').classList.remove('is-selected');
-  document.getElementById('mD').classList.remove('is-selected');
-  updateTopicButtons();
+  clearMainSelections();
   document.getElementById('birthRes').className='birth-res';
   document.getElementById('birthRes').innerHTML='';
   document.getElementById('bYear').value='';
@@ -410,6 +419,7 @@ document.getElementById('rst4').addEventListener('click',resetAll);
 document.getElementById('rst5').addEventListener('click',resetAll);
 
 function doShuffle(){
+  clearReadingParam();
   var ov=document.getElementById('ovSh');ov.classList.add('ON');
   setTimeout(function(){
     try{
@@ -417,8 +427,9 @@ function doShuffle(){
       S.selected=[];S.revealed=[];S.adding=false;
       document.getElementById('btnRev').className='btn-rev';
       document.getElementById('s4grid').innerHTML='';
-      document.getElementById('extraGrid').innerHTML='';
-      document.getElementById('extra').style.display='none';
+      document.getElementById('readingCards').innerHTML='';
+      document.getElementById('extraReadings').innerHTML='';
+      document.getElementById('openExtraDetails').hidden=true;
       buildTrack();show('s3');
     } catch(e){
       logger.error('셔플 오류:',e);
@@ -474,17 +485,18 @@ function buildTrack() {
 
 (function initTrackEvents(){
   var tr=document.getElementById('ctrack');
+  var arrTimer;
   tr.addEventListener('wheel',function(e){
     if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
       e.preventDefault();
-      tr.scrollBy({left:e.deltaY*2,behavior:REDUCED_MOTION?'auto':'smooth'});
-      setTimeout(updArr,200);
+      tr.scrollBy({left:e.deltaY*2,behavior:'auto'});
     }
   },{passive:false});
-  tr.addEventListener('scroll',updArr);
+  tr.addEventListener('scroll',function(){clearTimeout(arrTimer);arrTimer=setTimeout(updArr,80);},{passive:true});
 })();
 
 function pick(idx,el){
+  el.scrollIntoView({behavior:REDUCED_MOTION?'auto':'smooth',block:'nearest',inline:'center'});
   if(S.adding){
     var p=S.selected.indexOf(idx);
     if(p>-1){S.selected.splice(p,1);el.classList.remove('is-selected');el.setAttribute('aria-pressed','false');}
@@ -540,7 +552,7 @@ document.getElementById('arrL').addEventListener('click',function(){scrollTr(-1)
 document.getElementById('arrR').addEventListener('click',function(){scrollTr(1);});
 function scrollTr(d){
   var t=document.getElementById('ctrack');
-  t.scrollBy({left:d*340,behavior:REDUCED_MOTION?'auto':'smooth'});setTimeout(updArr,ANIM.SCROLL);
+  t.scrollBy({left:d*340,behavior:'auto'});updArr();
 }
 function updArr(){
   var t=document.getElementById('ctrack'),L=document.getElementById('arrL'),R=document.getElementById('arrR');
@@ -553,18 +565,17 @@ document.getElementById('btnRev').addEventListener('click',function(){
   if (document.getElementById('ovRv').classList.contains('ON')) return; // 연타 방지
   if(S.adding){
     if(!S.selected.length)return;
-    var SP=window.LOCALE.spreads;
     var nc=S.selected.map(function(i){return S.shuffled[i];});
-    var base=S.revealed.length;
     nc.forEach(function(c){S.revealed.push(c);});
     S.adding=false;S.selected=[];
+    renderResultCards();
     renderReadingOverview();
+    ['readingDetails','extra'].forEach(function(id){var dialog=document.getElementById(id);if(dialog.open)dialog.close();});
     document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
     document.getElementById('btnRev').textContent='선택한 카드 펼치기';
-    var ex=document.getElementById('extra');ex.style.display='block';
-    var eg=document.getElementById('extraGrid');
-    nc.forEach(function(c,i){eg.appendChild(mkCard(c,'추가 #'+(base+i-SP[S.count].pos.length+1),base+i));});
     show('s4');refreshMore();
+    document.getElementById('s4').classList.remove('is-shared');
+    var ex=document.getElementById('resultExtras');
     setTimeout(function(){ex.scrollIntoView({behavior:REDUCED_MOTION?'auto':'smooth',block:'nearest'});},200);
   } else {
     if(S.selected.length<S.count)return;
@@ -575,16 +586,8 @@ document.getElementById('btnRev').addEventListener('click',function(){
 
 function doReveal(){
   try{
-    var SP=window.LOCALE.spreads;
     S.revealed=S.selected.map(function(i){return S.shuffled[i];});
-    var sp=SP[S.count];
-    document.getElementById('s4topic').textContent=topicInfo().label+' 주제';
-    document.getElementById('s4title').textContent=sp.title;
-    document.getElementById('s4desc').textContent=sp.desc;
-    var g=document.getElementById('s4grid');g.innerHTML='';
-    buildGrid(S.revealed,sp,g);
-    renderReadingOverview();
-    show('s4');refreshMore();
+    renderResultScreen(false);
   }catch(e){
     logger.error('카드 공개 오류:',e);
     showToast(window.LOCALE&&window.LOCALE.ui.errorReveal||'카드를 공개하는 중 오류가 발생했습니다.');
@@ -593,10 +596,27 @@ function doReveal(){
 
 function renderReadingOverview(){
   var el=document.getElementById('readingOverview');
-  el.textContent=window.NORU.readingOverview?window.NORU.readingOverview():'';
+  if(window.NORU.renderReadingSummary)window.NORU.renderReadingSummary();
+  else el.textContent=window.NORU.readingOverview?window.NORU.readingOverview():'';
 }
 
-function mkCard(card, lbl, idx) {
+function renderResultScreen(shared){
+  var sp=window.LOCALE.spreads[S.count];
+  document.getElementById('s4topic').textContent='결과';
+  document.getElementById('readingOverviewTopic').textContent=topicInfo().label;
+  document.getElementById('s4title').textContent=sp.title;
+  document.getElementById('s4desc').textContent=sp.desc;
+  document.getElementById('resultInfo').open=false;
+  ['readingDetails','extra'].forEach(function(id){var dialog=document.getElementById(id);if(dialog.open)dialog.close();});
+  renderResultCards();
+  renderReadingOverview();
+  document.getElementById('s4').classList.toggle('is-shared',!!shared);
+  show('s4',shared?'replace':undefined);
+  refreshMore();
+}
+window.NORU.renderResultScreen=renderResultScreen;
+
+function mkCard(card, lbl, idx, revealIndex) {
   try {
     const el = document.createElement('button');
     el.type = 'button';
@@ -604,13 +624,16 @@ function mkCard(card, lbl, idx) {
     el.setAttribute('aria-label',(lbl||cardName(card))+' 카드 해석 보기');
 
     const numPrefix = typeof idx === 'number' ? `${idx + 1}. ` : '';
-    const revSuffix = card.isRev ? ` · ${window.LOCALE.ui.reversedShort}` : '';
-    const labelClass = card.isRev ? 'result-label is-reversed' : 'result-label';
+    const directionClass = card.isRev ? 'result-badge result-direction is-reversed' : 'result-badge result-direction';
+    const keywordBadges = (card.keywords || []).slice(0, 2).map(function(keyword) {
+      return `<span class="result-badge">${keyword}</span>`;
+    }).join('');
 
     el.innerHTML = `
+      <span class="result-label">${numPrefix}${lbl || '카드 ' + (idx + 1)}</span>
       <span class="result-frame"></span>
-      <span class="${labelClass}">${numPrefix}${lbl || '카드 ' + (idx + 1)}${revSuffix}</span>
       <span class="result-name">${cardName(card)}</span>
+      <span class="result-badges"><span class="${directionClass}">${card.isRev ? '역방향' : '정방향'}</span><span class="result-keywords">${keywordBadges}</span></span>
     `;
 
     const frame = el.querySelector('.result-frame');
@@ -618,11 +641,12 @@ function mkCard(card, lbl, idx) {
 
     el.addEventListener('click', () => openModal(card));
 
-    const delay = REDUCED_MOTION ? 0 : Math.min(idx, 8) * 55;
+    const order = Number.isInteger(revealIndex) ? revealIndex : (Number.isInteger(idx) ? idx : 0);
+    const delay = REDUCED_MOTION ? 0 : Math.min(order, 8) * 145;
     setTimeout(() => {
       el.classList.add('show');
-      setTimeout(() => frame.classList.add('flip-in'), REDUCED_MOTION?0:80);
-    }, delay + 10);
+      setTimeout(() => frame.classList.add('flip-in'), REDUCED_MOTION?0:70);
+    }, delay + (REDUCED_MOTION ? 0 : 90));
 
     return el;
   } catch(e) {
@@ -681,6 +705,19 @@ function buildGrid(cards, sp, con) {
     logger.error('결과 그리드 렌더링 오류:', e);
     showToast(window.LOCALE && window.LOCALE.ui.errorGrid || '결과를 표시하는 중 오류가 발생했습니다.');
   }
+}
+
+function renderResultCards(){
+  var spread=window.LOCALE.spreads[S.count];
+  var grid=document.getElementById('s4grid');
+  var extra=S.revealed.slice(S.count);
+  var extraWrap=document.getElementById('resultExtras');
+  var extraGrid=document.getElementById('s4extraGrid');
+  grid.innerHTML='';
+  extraGrid.innerHTML='';
+  buildGrid(S.revealed.slice(0,S.count),spread,grid);
+  extra.forEach(function(card,index){extraGrid.appendChild(mkCard(card,'추가 '+(index+1),undefined,S.count+index));});
+  extraWrap.hidden=!extra.length;
 }
 
 function getRemaining(){

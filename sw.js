@@ -1,16 +1,16 @@
 const CACHE_PREFIX = 'noru-';
-const CACHE_NAME = 'noru-v28';
+const CACHE_NAME = 'noru-v53';
 const APP_SHELL = [
   './',
   './index.html',
-  './css/style.css?v=28',
-  './core.js?v=28',
-  './card.js?v=28',
-  './locale/ko.js?v=28',
-  './app.js?v=28',
-  './detail.js?v=28',
-  './dictionary.js?v=28',
-  './summary.js?v=28',
+  './css/style.css?v=53',
+  './core.js?v=39',
+  './card.js?v=39',
+  './locale/ko.js?v=53',
+  './app.js?v=53',
+  './detail.js?v=39',
+  './dictionary.js?v=53',
+  './summary.js?v=53',
   './manifest.json',
   './icon-192.svg',
   './icon-512.svg'

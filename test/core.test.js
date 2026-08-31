@@ -49,6 +49,32 @@ test('summarizeReading counts directions and only reports a unique dominant suit
   assert.equal(tie.dominantSuit, null);
 });
 
+test('shared reading tokens preserve the exact spread and reject invalid data', function() {
+  const token = core.encodeReading({
+    topic: 'love',
+    deck: 'all',
+    count: 3,
+    cards: [
+      { id: 6, isRev: false },
+      { id: 36, isRev: true },
+      { id: 21, isRev: false }
+    ]
+  });
+
+  assert.deepEqual(core.decodeReading(token), {
+    topic: 'love',
+    deck: 'all',
+    count: 3,
+    cards: [
+      { id: 6, isRev: false },
+      { id: 36, isRev: true },
+      { id: 21, isRev: false }
+    ]
+  });
+  assert.equal(core.decodeReading('1.l.m.3.6u-36r-21u'), null);
+  assert.equal(core.decodeReading('broken'), null);
+});
+
 test('all 78 configured card images exist locally', function() {
   const filenames = Object.values(cards);
   assert.equal(filenames.length, 78);

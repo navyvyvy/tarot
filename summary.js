@@ -1,20 +1,24 @@
-/* ── READING SUMMARY & SHARE IMAGE ── */
+/* ── READING RESULT, SHARE URL & SHARE IMAGE ── */
 (function(){
-  var dialog=document.getElementById('summaryDialog');
-  var shareButton=document.getElementById('summaryShare');
+  var shareButton=document.getElementById('shareReading');
+  var saveButton=document.getElementById('saveReadingImage');
+  var shareDialog=document.getElementById('shareDialog');
+  var confirmShareButton=document.getElementById('confirmShare');
+  var readingDialog=document.getElementById('readingDetails');
+  var extraDialog=document.getElementById('extra');
+  var overviewSwitch=document.getElementById('overviewSwitch');
+  var shareOverviewSwitch=document.getElementById('shareOverviewSwitch');
   var currentSummary=null;
+  var overviewMode='main';
 
   function suitByCode(code){
     return (window.LOCALE.suits||[]).find(function(suit){return suit.code===code;});
   }
 
   function patternText(summary){
-    var parts=[];
-    if(S.deck!=='major'&&summary.dominantSuit){
-      var suit=suitByCode(summary.dominantSuit);
-      if(suit)parts.push(suit.n+'의 흐름이 두드러집니다. '+suit.guide);
-    }
-    return parts.join(' ');
+    if(S.deck==='major'||!summary.dominantSuit)return '';
+    var suit=suitByCode(summary.dominantSuit);
+    return suit?suit.n+' 카드가 가장 많이 나왔습니다. '+suit.guide:'';
   }
 
   function moneyContext(card){
@@ -40,62 +44,168 @@
         ? card.rv+' '+(suit?suit.reverseCareer:window.LOCALE.ui.modalMajorReverseCareer)
         : card.up+' '+card.ca;
     }
-    if(S.topic==='money'){
-      return (card.isRev?card.rv:card.up)+' 금전 흐름에서는 '+moneyContext(card);
-    }
+    if(S.topic==='money')return (card.isRev?card.rv:card.up)+' 금전 흐름에서는 '+moneyContext(card);
     return card.isRev?card.rv:card.up;
+  }
+
+  function firstSentence(text){
+    var match=String(text||'').match(/^[^.!?]+[.!?]?/);
+    return match?match[0].trim():'';
+  }
+
+  function overviewText(summary,withExtras){
+    var first=summary.entries[0];
+    var last=summary.entries[summary.entries.length-1];
+    if(!first)return '';
+    if(summary.entries.length===1){
+      return '이번에 중심으로 나온 카드는 '+cardName(first.card)+' '+(first.card.isRev?'역방향':'정방향')+'입니다. '+entryText(first);
+    }
+    if(summary.entries.length===2){
+      return '추가 카드까지 함께 보면 '+first.position+'의 '+cardName(first.card)+' 카드에 '+last.position+'의 '+cardName(last.card)+' 카드가 더해집니다. '+firstSentence(entryText(first))+' '+firstSentence(entryText(last))+(summary.pattern?' '+summary.pattern:'');
+    }
+    var middle=summary.entries[Math.floor(summary.entries.length/2)];
+    var prefix=withExtras?'추가 카드까지 함께 보면 ':'';
+    return prefix+'카드 흐름은 '+first.position+'의 '+cardName(first.card)+', '+middle.position+'의 '+cardName(middle.card)+', '+last.position+'의 '+cardName(last.card)+' 순서로 이어집니다. '+middle.position+'에서는 '+firstSentence(entryText(middle))+' '+last.position+'에서는 '+firstSentence(entryText(last))+(summary.pattern?' '+summary.pattern:'');
   }
 
   function buildSummary(){
     var spread=window.LOCALE.spreads[S.count];
     var summary=window.NORU.core.summarizeReading(S.revealed,S.topic,spread.pos);
-    var topic=window.LOCALE.topics[S.topic]||window.LOCALE.topics.general;
+    var main=window.NORU.core.summarizeReading(S.revealed.slice(0,S.count),S.topic,spread.pos);
     summary.spread=spread;
-    summary.topicInfo=topic;
+    summary.topicInfo=window.LOCALE.topics[S.topic]||window.LOCALE.topics.general;
+    summary.mainEntries=summary.entries.slice(0,S.count);
+    summary.extraEntries=summary.entries.slice(S.count);
+    main.pattern=patternText(main);
     summary.pattern=patternText(summary);
-    summary.headline=topic.summary;
+    summary.overview=overviewText(main,false);
+    summary.extraOverview=summary.extraEntries.length?overviewText(summary,true):'';
     return summary;
   }
 
-  function readingOverview(){
-    var summary=buildSummary();
-    var first=summary.entries[0],last=summary.entries[summary.entries.length-1];
-    if(!first)return '';
-    if(summary.entries.length===1){
-      return '이번 리딩의 중심은 '+cardName(first.card)+' '+(first.card.isRev?'역방향':'정방향')+'입니다. '+entryText(first);
-    }
-    return '전체 흐름은 '+first.position+'의 '+cardName(first.card)+'에서 '+last.position+'의 '+cardName(last.card)+'로 이어집니다. '+entryText(last)+(summary.pattern?' '+summary.pattern:'');
+  function currentOverview(){
+    return overviewMode==='all'&&currentSummary.extraOverview?currentSummary.extraOverview:currentSummary.overview;
   }
 
-  window.NORU.readingOverview=readingOverview;
-
-  function renderSummary(summary){
-    document.getElementById('summaryMeta').textContent=summary.topicInfo.label+' · '+summary.spread.title;
-    document.getElementById('summaryTitle').textContent=summary.topicInfo.resultTitle;
-    var cards=summary.entries.map(function(entry){
-      var name=cardName(entry.card);
-      var keywords=(entry.card.keywords||[]).slice(0,3).join(', ');
-      return '<article class="summary-card"><figure class="summary-card-art"><img src="'+cardImgUrl(entry.card)+'" alt="" class="'+(entry.card.isRev?'is-reversed':'')+'"></figure><div class="summary-card-copy"><div class="summary-card-meta"><strong>'+entry.position+'</strong><small>'+(entry.card.isRev?'역방향':'정방향')+'</small></div><h3>'+name+'</h3>'+(keywords?'<p class="summary-keywords">'+keywords+'</p>':'')+'<p>'+entryText(entry)+'</p></div></article>';
-    }).join('');
-    document.getElementById('summaryBody').innerHTML=
-      '<section class="summary-overview"><p class="summary-lead">'+summary.headline+'</p>'+
-      (summary.pattern?'<p>'+summary.pattern+'</p>':'')+'</section>'+
-      '<section class="summary-cards" aria-label="카드별 결과">'+cards+'</section>'+
-      '<p class="summary-disclaimer">이 요약은 선택을 대신하는 결론이 아니라, 현재 상황을 여러 각도에서 정리하기 위한 참고입니다.</p>';
+  function renderOverview(){
+    document.getElementById('readingOverview').textContent=currentOverview();
+    overviewSwitch.hidden=!currentSummary.extraEntries.length;
+    overviewSwitch.querySelectorAll('[data-overview]').forEach(function(button){
+      button.setAttribute('aria-pressed',String(button.dataset.overview===overviewMode));
+    });
   }
 
-  function openSummary(){
+  function cardMarkup(entry,index){
+    var name=cardName(entry.card);
+    var position=entry.position.indexOf('추가 카드')===0?entry.position.replace('추가 카드','추가'):(index+1)+'. '+entry.position;
+    var directionClass=entry.card.isRev?'result-badge result-direction is-reversed':'result-badge result-direction';
+    var keywordBadges=(entry.card.keywords||[]).slice(0,2).map(function(keyword){return '<span class="result-badge">'+keyword+'</span>';}).join('');
+    return '<article class="reading-card"><div class="reading-card-summary"><figure class="reading-card-art"><img src="'+cardImgUrl(entry.card)+'" alt="'+name+'" class="'+(entry.card.isRev?'is-reversed':'')+'"><figcaption class="result-name">'+name+'</figcaption></figure></div><div class="reading-card-copy"><strong class="result-label">'+position+'</strong><span class="result-badges"><span class="'+directionClass+'">'+(entry.card.isRev?'역방향':'정방향')+'</span><span class="result-keywords">'+keywordBadges+'</span></span><p>'+entryText(entry)+'</p></div></article>';
+  }
+
+  function renderReadingSummary(){
     if(!S.revealed.length)return;
+    var previousExtraCount=currentSummary?currentSummary.extraEntries.length:0;
     currentSummary=buildSummary();
-    renderSummary(currentSummary);
-    dialog.showModal();
-    document.getElementById('summaryClose').focus();
+    if(!currentSummary.extraEntries.length)overviewMode='main';
+    else if(currentSummary.extraEntries.length>previousExtraCount)overviewMode='all';
+    renderOverview();
+    var cards=document.getElementById('readingCards');
+    cards.className='reading-cards'+(currentSummary.mainEntries.length>3?' is-many':'');
+    cards.innerHTML=currentSummary.mainEntries.map(cardMarkup).join('');
+    var extra=document.getElementById('extra');
+    var extraCards=document.getElementById('extraReadings');
+    extraCards.className='reading-cards'+(currentSummary.extraEntries.length>3?' is-many':'');
+    extraCards.innerHTML=currentSummary.extraEntries.map(cardMarkup).join('');
+    document.getElementById('readingDetailsMeta').textContent=currentSummary.topicInfo.label+' / '+currentSummary.spread.title;
+    document.getElementById('extraDetailsMeta').textContent=currentSummary.topicInfo.label+' / '+currentSummary.spread.title;
+    document.getElementById('openExtraDetails').hidden=!currentSummary.extraEntries.length;
+    if(extra.open&&!currentSummary.extraEntries.length)extra.close();
+    document.getElementById('readingDisclosures').classList.toggle('has-extra',currentSummary.extraEntries.length>0);
   }
 
-  function closeSummary(){if(dialog.open)dialog.close();}
+  function readingOverview(){
+    if(!S.revealed.length)return '';
+    var summary=buildSummary();
+    return summary.extraOverview||summary.overview;
+  }
+  window.NORU.readingOverview=readingOverview;
+  window.NORU.renderReadingSummary=renderReadingSummary;
+
+  function createShareUrl(){
+    var token=window.NORU.core.encodeReading({topic:S.topic,deck:S.deck,count:S.count,cards:S.revealed});
+    if(!token)return '';
+    var canonical=document.querySelector('link[rel="canonical"]');
+    var url=new URL(canonical?canonical.href:location.href);
+    url.search='';
+    url.hash='';
+    url.searchParams.set('reading',token);
+    if(currentSummary&&currentSummary.extraEntries.length)url.searchParams.set('view',overviewMode);
+    return url.toString();
+  }
+  window.NORU.createShareUrl=createShareUrl;
+
+  function copyText(value){
+    if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(value);
+    var input=document.createElement('textarea');
+    input.value=value;input.setAttribute('readonly','');input.style.position='fixed';input.style.opacity='0';
+    document.body.appendChild(input);input.select();document.execCommand('copy');input.remove();
+    return Promise.resolve();
+  }
+
+  function previewCardMarkup(entry){
+    var name=cardName(entry.card);
+    return '<figure class="share-preview-card"><div><img src="'+cardImgUrl(entry.card)+'" alt="'+name+'" class="'+(entry.card.isRev?'is-reversed':'')+'"></div><figcaption><strong>'+entry.position+'</strong><span>'+name+' '+(entry.card.isRev?'역방향':'정방향')+'</span></figcaption></figure>';
+  }
+
+  function renderSharePreview(){
+    if(!currentSummary)renderReadingSummary();
+    document.getElementById('shareDialogMeta').textContent=currentSummary.topicInfo.label;
+    document.getElementById('shareDialogTitle').textContent=currentSummary.spread.title;
+    document.getElementById('sharePreviewCards').innerHTML=currentSummary.mainEntries.map(previewCardMarkup).join('');
+    document.getElementById('sharePreviewOverview').textContent=currentOverview();
+    var extra=document.getElementById('sharePreviewExtra');
+    document.getElementById('sharePreviewExtraCards').innerHTML=currentSummary.extraEntries.map(previewCardMarkup).join('');
+    extra.style.display=currentSummary.extraEntries.length&&overviewMode==='all'?'block':'none';
+    shareOverviewSwitch.hidden=!currentSummary.extraEntries.length;
+    shareOverviewSwitch.querySelectorAll('[data-share-overview]').forEach(function(button){
+      button.setAttribute('aria-pressed',String(button.dataset.shareOverview===overviewMode));
+    });
+  }
+
+  function openShareDialog(){
+    renderSharePreview();
+    shareDialog.showModal();
+    confirmShareButton.focus();
+  }
+
+  function closeShareDialog(){if(shareDialog.open)shareDialog.close();}
+
+  function openReadingDialog(dialog){dialog.showModal();dialog.querySelector('.reading-dialog-close').focus();}
+  function closeReadingDialog(dialog){if(dialog.open)dialog.close();}
+
+  async function shareReading(){
+    var url=createShareUrl();
+    if(!url)return;
+    var original=confirmShareButton.textContent;
+    confirmShareButton.disabled=true;confirmShareButton.textContent='공유 준비 중...';
+    try{
+      var text=currentSummary.topicInfo.label+' '+currentSummary.topicInfo.resultTitle+'\n'+currentOverview();
+      if(navigator.share)await navigator.share({title:'NORU '+currentSummary.topicInfo.resultTitle,text:text,url:url});
+      else{await copyText(url);showToast('결과 링크를 복사했습니다.');}
+      closeShareDialog();
+    }catch(error){
+      if(error&&error.name!=='AbortError'){
+        logger.error('결과 링크 공유 오류:',error);
+        showToast('결과 링크를 공유하지 못했습니다.');
+      }
+    }finally{
+      confirmShareButton.disabled=false;confirmShareButton.textContent=original;
+    }
+  }
 
   function textLines(ctx,text,maxWidth,maxLines){
-    var words=text.split(/\s+/),line='',lines=[];
+    var words=String(text||'').split(/\s+/),line='',lines=[];
     words.forEach(function(word){
       var next=line?line+' '+word:word;
       if(line&&ctx.measureText(next).width>maxWidth){lines.push(line);line=word;}
@@ -122,105 +232,131 @@
 
   async function makeShareImage(summary){
     if(document.fonts&&document.fonts.ready)await document.fonts.ready;
-    var canvas=document.createElement('canvas');
-    canvas.width=1080;canvas.height=1;
+    var canvas=document.createElement('canvas');canvas.width=1080;canvas.height=10;
     var ctx=canvas.getContext('2d');
-    var cards=summary.entries;
-    var columns=Math.min(5,cards.length);
-    var cardWidth=cards.length===1?180:cards.length<=3?150:104;
+    ctx.font='25px system-ui, sans-serif';
+    var overviewLines=textLines(ctx,summary.overview,860);
+    var gap=24;
+    var columns=Math.min(5,summary.mainEntries.length);
+    var cardWidth=summary.mainEntries.length===1?224:summary.mainEntries.length<=3?176:116;
     var cardHeight=Math.round(cardWidth*691/400);
-    var gap=22;
-    var rows=Math.ceil(cards.length/columns);
-    var cardTop=260;
-    var resultTop=cardTop+rows*(cardHeight+44)+58;
-    var resultHeight=cards.reduce(function(total,entry,index){
-      ctx.font='700 26px system-ui, sans-serif';
-      var titleHeight=textLines(ctx,(index+1)+'. '+entry.position,860).length*36;
-      ctx.font='23px system-ui, sans-serif';
-      var bodyHeight=textLines(ctx,entryText(entry),860).length*34;
-      return total+titleHeight+74+bodyHeight+22+(index<cards.length-1?28:0);
-    },0);
-    canvas.height=Math.max(1350,resultTop+resultHeight+150);
+    var rows=Math.ceil(summary.mainEntries.length/columns);
+    var cardTop=238;
+    var mainBottom=cardTop+rows*(cardHeight+58);
+    var extraColumns=Math.max(1,Math.min(summary.extraEntries.length,Math.floor((908+gap)/(cardWidth+gap))));
+    var extraRows=summary.extraEntries.length?Math.ceil(summary.extraEntries.length/extraColumns):0;
+    var extraTop=summary.extraEntries.length?mainBottom+74:mainBottom;
+    var extraBottom=summary.extraEntries.length?extraTop+extraRows*(cardHeight+58):mainBottom;
+    var overviewBoxTop=extraBottom+42;
+    var overviewHeight=overviewLines.length*36+104;
+    canvas.height=Math.max(1350,overviewBoxTop+overviewHeight+86);
     ctx=canvas.getContext('2d');
     var gradient=ctx.createLinearGradient(0,0,1080,canvas.height);
-    gradient.addColorStop(0,'#1b0f34');gradient.addColorStop(1,'#07050d');
+    gradient.addColorStop(0,'#1b0f34');gradient.addColorStop(.48,'#10091f');gradient.addColorStop(1,'#07050d');
     ctx.fillStyle=gradient;ctx.fillRect(0,0,1080,canvas.height);
-    ctx.fillStyle='rgba(216,184,103,.2)';ctx.fillRect(70,56,4,canvas.height-112);
-    ctx.strokeStyle='rgba(216,184,103,.22)';ctx.lineWidth=2;ctx.strokeRect(36,36,1008,canvas.height-72);
+    ctx.strokeStyle='rgba(216,184,103,.3)';ctx.lineWidth=2;ctx.strokeRect(42,42,996,canvas.height-84);
 
-    ctx.fillStyle='#f1dda2';ctx.font='600 52px Georgia, serif';ctx.fillText('NORU',94,124);
-    ctx.fillStyle='#c7bbac';ctx.font='26px system-ui, sans-serif';
-    ctx.fillText(summary.topicInfo.label+' · '+summary.spread.title,94,174);
-    ctx.fillStyle='#f7f0e3';ctx.font='700 40px system-ui, sans-serif';
-    ctx.fillText(summary.topicInfo.resultTitle,94,224);
+    ctx.fillStyle='#f1dda2';ctx.font='600 48px Georgia, serif';ctx.fillText('NORU',86,124);
+    ctx.fillStyle='#d8b867';ctx.font='700 21px system-ui, sans-serif';ctx.fillText(summary.topicInfo.label,86,170);
+    ctx.fillStyle='#f7f0e3';ctx.font='500 34px Georgia, serif';ctx.fillText(summary.spread.title,86,208);
+    var images=await Promise.all(summary.entries.map(function(entry){return loadCardImage(entry.card);}));
 
-    var images=await Promise.all(cards.map(function(entry){return loadCardImage(entry.card);}));
-    cards.forEach(function(entry,index){
-      var row=Math.floor(index/columns),inRow=index%columns;
-      var rowCount=Math.min(columns,cards.length-row*columns);
-      var rowWidth=rowCount*cardWidth+(rowCount-1)*gap;
-      var x=(1080-rowWidth)/2+inRow*(cardWidth+gap);
-      var y=cardTop+row*(cardHeight+42);
-      ctx.save();
-      ctx.beginPath();ctx.roundRect(x,y,cardWidth,cardHeight,8);ctx.clip();
-      if(images[index]){
-        if(entry.card.isRev){ctx.translate(x+cardWidth/2,y+cardHeight/2);ctx.rotate(Math.PI);ctx.drawImage(images[index],-cardWidth/2,-cardHeight/2,cardWidth,cardHeight);}
-        else ctx.drawImage(images[index],x,y,cardWidth,cardHeight);
-      }else{
-        ctx.fillStyle='#21133b';ctx.fillRect(x,y,cardWidth,cardHeight);
-      }
+    function drawCard(entry,image,x,y){
+      ctx.save();ctx.beginPath();ctx.roundRect(x,y,cardWidth,cardHeight,8);ctx.clip();
+      if(image){
+        if(entry.card.isRev){ctx.translate(x+cardWidth/2,y+cardHeight/2);ctx.rotate(Math.PI);ctx.drawImage(image,-cardWidth/2,-cardHeight/2,cardWidth,cardHeight);}
+        else ctx.drawImage(image,x,y,cardWidth,cardHeight);
+      }else{ctx.fillStyle='#21133b';ctx.fillRect(x,y,cardWidth,cardHeight);}
       ctx.restore();
-      ctx.strokeStyle='rgba(241,221,162,.55)';ctx.lineWidth=2;ctx.strokeRect(x,y,cardWidth,cardHeight);
-      ctx.fillStyle=entry.card.isRev?'#f18b99':'#d8b867';ctx.font='600 19px system-ui, sans-serif';ctx.textAlign='center';ctx.fillText(String(index+1),x+cardWidth/2,y+cardHeight+28);ctx.textAlign='left';
+      ctx.strokeStyle='rgba(241,221,162,.62)';ctx.lineWidth=2;ctx.strokeRect(x,y,cardWidth,cardHeight);
+      ctx.textAlign='center';ctx.fillStyle=entry.card.isRev?'#f18b99':'#d8b867';ctx.font='700 18px system-ui, sans-serif';ctx.fillText(entry.position+(entry.card.isRev?' · 역':''),x+cardWidth/2,y+cardHeight+27);
+      ctx.fillStyle='#f7f0e3';ctx.font='500 18px Georgia, serif';ctx.fillText(cardName(entry.card),x+cardWidth/2,y+cardHeight+51);ctx.textAlign='left';
+    }
+
+    summary.mainEntries.forEach(function(entry,index){
+      var row=Math.floor(index/columns),inRow=index%columns;
+      var rowCount=Math.min(columns,summary.mainEntries.length-row*columns);
+      var rowWidth=rowCount*cardWidth+(rowCount-1)*gap;
+      drawCard(entry,images[index],(1080-rowWidth)/2+inRow*(cardWidth+gap),cardTop+row*(cardHeight+58));
     });
 
-    ctx.fillStyle='#d8b867';ctx.font='700 24px system-ui, sans-serif';ctx.fillText('카드 결과',94,resultTop);
-    var resultY=resultTop+50;
-    cards.forEach(function(entry,index){
-      ctx.fillStyle='#f7f0e3';ctx.font='700 26px system-ui, sans-serif';
-      resultY=wrapText(ctx,(index+1)+'. '+entry.position,94,resultY,860,36,2);
-      ctx.fillStyle=entry.card.isRev?'#f18b99':'#d8b867';ctx.font='600 21px system-ui, sans-serif';
-      ctx.fillText(cardName(entry.card)+' · '+(entry.card.isRev?'역방향':'정방향'),94,resultY+4);
-      ctx.fillStyle='#9f93ae';ctx.font='19px system-ui, sans-serif';
-      ctx.fillText((entry.card.keywords||[]).slice(0,3).join(' · '),94,resultY+36);
-      ctx.fillStyle='#c7bbac';ctx.font='23px system-ui, sans-serif';
-      resultY=wrapText(ctx,entryText(entry),94,resultY+74,860,34)+22;
-      if(index<cards.length-1){ctx.strokeStyle='rgba(216,184,103,.18)';ctx.beginPath();ctx.moveTo(94,resultY);ctx.lineTo(954,resultY);ctx.stroke();resultY+=28;}
-    });
-    ctx.fillStyle='#9a8faa';ctx.font='21px system-ui, sans-serif';
-    wrapText(ctx,'오락과 자기 성찰을 위한 카드 해석입니다.',94,canvas.height-72,892,32,2);
+    if(summary.extraEntries.length){
+      ctx.fillStyle='#d8b867';ctx.font='700 21px system-ui, sans-serif';ctx.fillText('추가 카드',86,extraTop-30);
+      summary.extraEntries.forEach(function(entry,index){
+        var row=Math.floor(index/extraColumns),inRow=index%extraColumns;
+        var rowCount=Math.min(extraColumns,summary.extraEntries.length-row*extraColumns);
+        var rowWidth=rowCount*cardWidth+(rowCount-1)*gap;
+        drawCard(entry,images[summary.mainEntries.length+index],(1080-rowWidth)/2+inRow*(cardWidth+gap),extraTop+row*(cardHeight+58));
+      });
+    }
+
+    ctx.fillStyle='rgba(216,184,103,.09)';ctx.beginPath();ctx.roundRect(82,overviewBoxTop,916,overviewHeight,16);ctx.fill();
+    ctx.strokeStyle='rgba(216,184,103,.34)';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#f1dda2';ctx.font='500 32px Georgia, serif';ctx.fillText('종합 평가',112,overviewBoxTop+46);
+    ctx.fillStyle='#f7f0e3';ctx.font='25px system-ui, sans-serif';wrapText(ctx,summary.overview,112,overviewBoxTop+88,856,36);
     return new Promise(function(resolve,reject){canvas.toBlob(function(blob){blob?resolve(blob):reject(new Error('이미지를 만들지 못했습니다.'));},'image/png');});
   }
 
-  async function shareSummary(){
-    if(!currentSummary)return;
-    var original=shareButton.textContent;
-    shareButton.disabled=true;shareButton.textContent='공유 이미지 만드는 중...';
+  async function saveReadingImage(){
+    if(!currentSummary)renderReadingSummary();
+    var original=saveButton.textContent;
+    saveButton.disabled=true;saveButton.textContent='이미지 만드는 중...';
     try{
-      var blob=await makeShareImage(currentSummary);
-      var filename='noru-'+S.topic+'-'+Date.now()+'.png';
-      var file=new File([blob],filename,{type:'image/png'});
-      var shareText=currentSummary.topicInfo.label+' · '+currentSummary.spread.title+'\n'+currentSummary.entries.map(function(entry){return entry.position+': '+cardName(entry.card)+' '+(entry.card.isRev?'역방향':'정방향')+'\n'+entryText(entry);}).join('\n\n');
-      if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
-        await navigator.share({title:'NORU '+currentSummary.topicInfo.label+' 결과',text:shareText,files:[file]});
-      }else{
-        var link=document.createElement('a');
-        link.href=URL.createObjectURL(blob);link.download=filename;link.click();
-        setTimeout(function(){URL.revokeObjectURL(link.href);},1000);
-        showToast('공유 이미지를 저장했습니다.');
-      }
+      var includeExtras=overviewMode==='all';
+      var blob=await makeShareImage(Object.assign({},currentSummary,{overview:currentOverview(),entries:includeExtras?currentSummary.entries:currentSummary.mainEntries,extraEntries:includeExtras?currentSummary.extraEntries:[]}));
+      var link=document.createElement('a');
+      link.href=URL.createObjectURL(blob);link.download='noru-'+S.topic+'-'+Date.now()+'.png';link.click();
+      setTimeout(function(){URL.revokeObjectURL(link.href);},1000);
+      showToast('결과 이미지를 저장했습니다.');
     }catch(error){
-      if(error&&error.name!=='AbortError'){
-        logger.error('결과 공유 오류:',error);
-        showToast('공유 이미지를 만드는 중 문제가 생겼습니다.');
-      }
+      logger.error('결과 이미지 저장 오류:',error);
+      showToast('결과 이미지를 만들지 못했습니다.');
     }finally{
-      shareButton.disabled=false;shareButton.textContent=original;
+      saveButton.disabled=false;saveButton.textContent=original;
     }
   }
 
-  document.getElementById('btnSummary').addEventListener('click',openSummary);
-  document.getElementById('summaryClose').addEventListener('click',closeSummary);
-  shareButton.addEventListener('click',shareSummary);
-  dialog.addEventListener('click',function(event){if(event.target===dialog)closeSummary();});
+  function restoreSharedReading(){
+    var token=new URL(location.href).searchParams.get('reading');
+    if(!token)return;
+    var shared=window.NORU.core.decodeReading(token);
+    if(!shared){showToast('공유 결과 링크가 올바르지 않습니다.');return;}
+    var byId={};
+    window.LOCALE.allCards.forEach(function(card){byId[card.id]=card;});
+    var revealed=shared.cards.map(function(value){
+      return byId[value.id]?Object.assign({},byId[value.id],{isRev:value.isRev}):null;
+    });
+    if(revealed.some(function(card){return !card;})){showToast('공유 결과를 불러오지 못했습니다.');return;}
+    Object.assign(S,{mode:'tarot',topic:shared.topic,deck:shared.deck,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false});
+    var deckInput=document.querySelector('.deck-input[value="'+S.deck+'"]');
+    var countInput=document.querySelector('.count-input[value="'+S.count+'"]');
+    if(deckInput)deckInput.checked=true;
+    if(countInput)countInput.checked=true;
+    updateTopicButtons();renderSpInfo();
+    window.NORU.renderResultScreen(true);
+    if(new URL(location.href).searchParams.get('view')==='main'){
+      overviewMode='main';
+      renderOverview();
+    }
+    document.title='NORU '+currentSummary.topicInfo.resultTitle;
+  }
+
+  shareButton.addEventListener('click',openShareDialog);
+  confirmShareButton.addEventListener('click',shareReading);
+  document.getElementById('shareDialogClose').addEventListener('click',closeShareDialog);
+  shareDialog.addEventListener('click',function(event){if(event.target===shareDialog)closeShareDialog();});
+  document.getElementById('openReadingDetails').addEventListener('click',function(){openReadingDialog(readingDialog);});
+  document.getElementById('openExtraDetails').addEventListener('click',function(){openReadingDialog(extraDialog);});
+  overviewSwitch.querySelectorAll('[data-overview]').forEach(function(button){
+    button.addEventListener('click',function(){overviewMode=button.dataset.overview;renderOverview();});
+  });
+  shareOverviewSwitch.querySelectorAll('[data-share-overview]').forEach(function(button){
+    button.addEventListener('click',function(){overviewMode=button.dataset.shareOverview;renderOverview();renderSharePreview();});
+  });
+  document.getElementById('readingDetailsClose').addEventListener('click',function(){closeReadingDialog(readingDialog);});
+  document.getElementById('extraClose').addEventListener('click',function(){closeReadingDialog(extraDialog);});
+  readingDialog.addEventListener('click',function(event){if(event.target===readingDialog)closeReadingDialog(readingDialog);});
+  extraDialog.addEventListener('click',function(event){if(event.target===extraDialog)closeReadingDialog(extraDialog);});
+  saveButton.addEventListener('click',saveReadingImage);
+  window.addEventListener('DOMContentLoaded',restoreSharedReading);
 })();

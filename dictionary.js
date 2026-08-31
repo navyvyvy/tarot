@@ -9,6 +9,8 @@
     return suit?suit.n:'';
   }
 
+  function groupKey(card){return card.type==='major'?'major':card.suitCode;}
+
   function matches(card){
     var kind=card.type==='major'?'major':card.suitCode;
     if(filter==='minor' && card.type==='major')return false;
@@ -24,16 +26,17 @@
       var grid=document.getElementById('dictionaryGrid');
       var empty=document.getElementById('dictionaryEmpty');
       var fragment=document.createDocumentFragment();
-      var lastType='';
+      var lastGroup='';
       grid.innerHTML='';
 
       cards.forEach(function(card){
-        if(card.type!==lastType){
-          lastType=card.type;
+        var key=groupKey(card);
+        if(key!==lastGroup){
+          lastGroup=key;
           var group=document.createElement('h3');
-          var count=cards.filter(function(item){return item.type===card.type;}).length;
+          var count=cards.filter(function(item){return groupKey(item)===key;}).length;
           group.className='dictionary-group-title';
-          group.textContent=(card.type==='major'?'메이저 아르카나':'마이너 아르카나')+' · '+count+'장';
+          group.textContent=suitName(card)+' · '+count+'장';
           fragment.appendChild(group);
         }
         var button=document.createElement('button');
@@ -41,14 +44,14 @@
         button.type='button';
         button.className='dictionary-card';
         button.setAttribute('aria-label',name+' 카드 해석 보기');
-        button.innerHTML='<span class="dictionary-frame"></span><span class="dictionary-type">'+(card.type==='major'?'메이저 아르카나':'마이너 · '+suitName(card))+'</span><strong>'+name+'</strong>';
+        button.innerHTML='<span class="dictionary-frame"></span><strong>'+name+'</strong>';
         button.querySelector('.dictionary-frame').appendChild(makeImg(card,false));
         button.addEventListener('click',function(){openModal(card);});
         fragment.appendChild(button);
       });
 
       grid.appendChild(fragment);
-      document.getElementById('dictionaryCount').textContent='총 '+cards.length+'장의 카드를 보여드리고 있어요.';
+      document.getElementById('dictionaryCount').textContent='총 '+cards.length+'장';
       empty.hidden=cards.length!==0;
     }catch(e){
       logger.error('카드 사전 렌더링 오류:',e);
@@ -58,7 +61,6 @@
 
   document.getElementById('mD').addEventListener('click',function(){
     S.mode='dictionary';
-    document.getElementById('mT').classList.remove('is-selected');
     document.getElementById('mB').classList.remove('is-selected');
     document.getElementById('mD').classList.add('is-selected');
     renderDictionary();
