@@ -1,6 +1,7 @@
 (function(root, factory) {
   var images = factory();
   var decks = Object.create(null);
+  var defaultDeckId = 'rws';
 
   function cardKey(card) {
     return card.type === 'major'
@@ -10,9 +11,14 @@
 
   function createDeck(definition) {
     var allCards = [];
+    var assetRoot = (definition.assetRoot || './assets').replace(/\/$/, '');
     return {
       id: definition.id,
       name: definition.name,
+      shortName: definition.shortName || definition.name,
+      tradition: definition.tradition || '',
+      description: definition.description || '',
+      previewCardId: definition.previewCardId || 0,
       setCards: function(cards) {
         allCards = cards.slice();
       },
@@ -25,10 +31,10 @@
         return allCards.find(function(card) { return card.id === id; }) || null;
       },
       image: function(card) {
-        return './assets/' + (definition.images[cardKey(card)] || 'default.webp');
+        return assetRoot + '/' + (definition.images[cardKey(card)] || 'default.webp');
       },
       assets: function() {
-        return Object.values(definition.images).map(function(filename) { return './assets/' + filename; });
+        return Object.values(definition.images).map(function(filename) { return assetRoot + '/' + filename; });
       }
     };
   }
@@ -41,12 +47,21 @@
   }
 
   var catalog = {
+    defaultId: defaultDeckId,
     register: register,
     get: function(id) { return decks[id] || null; },
     list: function() { return Object.keys(decks).map(function(id) { return decks[id]; }); }
   };
 
-  register({ id: 'rws', name: '유니버설 웨이트', images: images });
+  register({
+    id: 'rws',
+    name: '유니버설 웨이트',
+    shortName: '웨이트',
+    tradition: '라이더–웨이트–스미스',
+    description: '장면이 또렷해 처음 읽기 쉬운 덱',
+    previewCardId: 0,
+    images: images
+  });
   root.NORU = root.NORU || {};
   root.NORU.deckCatalog = catalog;
   if (typeof module === 'object' && module.exports) module.exports = catalog;

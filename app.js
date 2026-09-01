@@ -12,7 +12,7 @@
 })();
 
 function activeDeck() {
-  var deckId=window.NORU.state&&window.NORU.state.deckId||'rws';
+  var deckId=window.NORU.state&&window.NORU.state.deckId||window.NORU.deckCatalog.defaultId;
   var deck=window.NORU.deckCatalog.get(deckId);
   if(!deck)throw new Error('등록되지 않은 카드 덱입니다: '+deckId);
   return deck;
@@ -216,7 +216,7 @@ function cardName(card){
   return full.name||'';
 }
 
-var S=window.NORU.state={mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3};
+var S=window.NORU.state={mode:'',topic:'general',deckId:window.NORU.deckCatalog.defaultId,pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3};
 
 function poolCards(){
   return activeDeck().cards(S.pool);
@@ -375,8 +375,9 @@ document.getElementById('toS3').addEventListener('click',function() {
 });
 
 function resetAll(){
+  var deckId=S.deckId;
   history.replaceState(history.state,'',new URL('.',location.href));
-  Object.assign(S,{mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3});
+  Object.assign(S,{mode:'',topic:'general',deckId:deckId,pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3});
   document.querySelector('.pool-input[value="major"]').checked=true;
   document.querySelector('.count-input[value="1"]').checked=true;
   document.getElementById('revSlider').value=50;
@@ -884,7 +885,13 @@ function initializeData(){
     return c;
   }
 
-  activeDeck().setCards(MAJ.concat(buildMinor()));
+  var rwsDeck=window.NORU.deckCatalog.get('rws');
+  if(!rwsDeck){
+    logger.error('기본 카드 덱을 찾지 못했습니다.');
+    showToast('카드 데이터를 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
+    return;
+  }
+  rwsDeck.setCards(MAJ.concat(buildMinor()));
 
   renderSpInfo();
   applyLocale();

@@ -1,19 +1,19 @@
 importScripts('./card.js');
 
 const APP_CACHE_PREFIX = 'noru-app-';
-const CACHE_NAME = 'noru-app-v63';
+const CACHE_NAME = 'noru-app-v64';
 const CARD_CACHE_NAME = 'noru-cards-v1';
 const APP_SHELL = [
   './',
   './index.html',
-  './css/style.css?v=63',
-  './core.js?v=63',
-  './card.js?v=63',
-  './locale/ko.js?v=63',
-  './app.js?v=63',
-  './detail.js?v=63',
-  './dictionary.js?v=63',
-  './summary.js?v=63',
+  './css/style.css?v=64',
+  './core.js?v=64',
+  './card.js?v=64',
+  './locale/ko.js?v=64',
+  './app.js?v=64',
+  './detail.js?v=64',
+  './dictionary.js?v=64',
+  './summary.js?v=64',
   './manifest.json',
   './icon-192.svg',
   './icon-512.svg'

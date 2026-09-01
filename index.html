@@ -29,7 +29,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon-192.svg">
   <link rel="apple-touch-icon" href="icon-192.svg">
-  <link rel="stylesheet" href="css/style.css?v=63">
+  <link rel="stylesheet" href="css/style.css?v=64">
 </head>
 <body>
   <canvas id="cvs" aria-hidden="true"></canvas>
@@ -75,21 +75,21 @@
       </section>
 
       <section class="step" id="s1" aria-labelledby="s1title" hidden>
-        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepDeck">I · 덱 선택</span><span class="step-line"></span><button class="back-btn" id="bk1" type="button">처음으로</button></div>
-        <h2 id="s1title" tabindex="-1">어떤 덱으로 카드를 펼쳐볼까요?</h2>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepPool">I · 카드 범위</span><span class="step-line"></span><button class="back-btn" id="bk1" type="button">처음으로</button></div>
+        <h2 id="s1title" tabindex="-1">어떤 카드까지 섞을까요?</h2>
         <fieldset class="choice-fieldset">
-          <legend class="sr-only">타로 덱 선택</legend>
+          <legend class="sr-only">사용할 카드 범위 선택</legend>
           <div class="pool-row">
             <label class="pool-btn"><input class="choice-input pool-input" type="radio" name="pool" value="major" checked><strong><span class="pool-count">22</span>메이저 아르카나</strong><span class="pool-sub">삶의 큰 흐름</span></label>
             <label class="pool-btn"><input class="choice-input pool-input" type="radio" name="pool" value="minor"><strong><span class="pool-count">56</span>마이너 아르카나</strong><span class="pool-sub">일상 속 감정과 선택</span></label>
-            <label class="pool-btn"><input class="choice-input pool-input" type="radio" name="pool" value="all"><strong><span class="pool-count">78</span>전체 덱</strong><span class="pool-sub">모든 카드를 함께</span></label>
+            <label class="pool-btn"><input class="choice-input pool-input" type="radio" name="pool" value="all"><strong><span class="pool-count">78</span>전체 카드</strong><span class="pool-sub">모든 카드를 함께</span></label>
           </div>
         </fieldset>
         <button class="btn-go" id="toS2" type="button">스프레드 선택</button>
       </section>
 
       <section class="step" id="s2" aria-labelledby="s2title" hidden>
-        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepSpread">II · 스프레드</span><span class="step-line"></span><button class="back-btn" id="bk2" type="button">덱 변경</button></div>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepSpread">II · 스프레드</span><span class="step-line"></span><button class="back-btn" id="bk2" type="button">카드 범위 변경</button></div>
         <h2 id="s2title" tabindex="-1">몇 장을 펼쳐볼까요?</h2>
         <fieldset class="choice-fieldset">
           <legend class="sr-only">스프레드 카드 수 선택</legend>
@@ -117,7 +117,7 @@
         <div class="prog"><div class="prog-copy"><span>선택한 카드</span><strong class="prog-txt" id="pTxt">0 / 0</strong></div><div class="prog-bg" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="카드 선택 진행률"><div class="prog-fill" id="pFill"></div></div></div>
         <div class="track-wrap">
           <button class="arr L H" id="arrL" type="button" aria-label="이전 카드"><span aria-hidden="true">‹</span></button>
-          <div class="track-fade"><div class="ctrack" id="ctrack" role="group" aria-label="타로 카드 덱"></div></div>
+          <div class="track-fade"><div class="ctrack" id="ctrack" role="group" aria-label="섞은 타로 카드"></div></div>
           <button class="arr R H" id="arrR" type="button" aria-label="다음 카드"><span aria-hidden="true">›</span></button>
         </div>
         <button class="btn-rev" id="btnRev" type="button">선택한 카드 펼치기</button>
@@ -170,12 +170,12 @@
   <dialog class="share-dialog" id="shareDialog" aria-labelledby="shareDialogTitle"><div class="share-dialog-shell"><header class="share-dialog-head"><div><a class="share-dialog-brand" id="shareDialogBrand" href="./" hidden>NORU</a><p id="shareDialogMeta"></p><h2 id="shareDialogTitle" tabindex="-1">공유할 결과 확인</h2></div><button class="share-dialog-close" id="shareDialogClose" type="button" aria-label="공유 창 닫기">닫기</button></header><div class="share-dialog-body"><div class="share-preview-spread"><section aria-labelledby="shareCardsTitle"><h3 class="sr-only" id="shareCardsTitle">선택한 카드</h3><div class="share-preview-cards" id="sharePreviewCards"></div></section><section class="share-preview-extra" id="sharePreviewExtra" aria-labelledby="shareExtraTitle"><h3 id="shareExtraTitle">추가 카드</h3><div class="share-preview-cards" id="sharePreviewExtraCards"></div></section></div><section class="share-preview-overview" aria-labelledby="shareOverviewTitle"><div class="share-preview-overview-head"><h3 id="shareOverviewTitle">종합 평가</h3><div class="overview-switch" id="shareOverviewSwitch" aria-label="공유할 종합 평가" hidden><button type="button" data-share-overview="main" aria-pressed="true">처음 결과</button><button type="button" data-share-overview="all" aria-pressed="false">추가 카드 포함</button></div></div><p id="sharePreviewOverview"></p></section></div><div class="share-dialog-actions"><button class="btn-save-image" id="saveReadingImage" type="button">이미지 저장</button><button class="btn-share" id="confirmShare" type="button">공유하기</button><a class="btn-new-reading" id="startNewReading" href="./?mode=tarot" hidden>내 타로 보기</a></div></div></dialog>
   <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
 
-  <script src="card.js?v=63"></script>
-<script src="locale/ko.js?v=63"></script>
-  <script src="core.js?v=63"></script>
-<script src="app.js?v=63"></script>
-  <script src="detail.js?v=63"></script>
-  <script src="dictionary.js?v=63"></script>
-  <script src="summary.js?v=63"></script>
+  <script src="card.js?v=64"></script>
+<script src="locale/ko.js?v=64"></script>
+  <script src="core.js?v=64"></script>
+<script src="app.js?v=64"></script>
+  <script src="detail.js?v=64"></script>
+  <script src="dictionary.js?v=64"></script>
+  <script src="summary.js?v=64"></script>
 </body>
 </html>

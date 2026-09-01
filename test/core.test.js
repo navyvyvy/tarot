@@ -105,6 +105,9 @@ test('all 78 configured card images exist locally', function() {
 
 test('deck catalog keeps card lookup and pool selection behind one interface', function() {
   const deck = deckCatalog.get('rws');
+  assert.equal(deckCatalog.defaultId, 'rws');
+  assert.equal(deck.shortName, '웨이트');
+  assert.equal(deck.tradition, '라이더–웨이트–스미스');
   deck.setCards([{ id: 0, type: 'major' }, { id: 22, type: 'minor', suitCode: 'wands', numCode: 'ace' }]);
   assert.equal(deck.card(22).suitCode, 'wands');
   assert.deepEqual(deck.cards('major').map(function(card) { return card.id; }), [0]);
@@ -114,11 +117,18 @@ test('deck catalog keeps card lookup and pool selection behind one interface', f
   const secondDeck = deckCatalog.register({
     id: 'test-deck',
     name: 'Test Deck',
+    shortName: 'Test',
+    tradition: 'Test Tradition',
+    description: 'Test description',
+    assetRoot: './assets/decks/test',
     images: { major_0: 'test.webp' },
     cards: [{ id: 0, type: 'major', name: 'Test Card' }]
   });
+  assert.equal(secondDeck.shortName, 'Test');
+  assert.equal(secondDeck.tradition, 'Test Tradition');
+  assert.equal(secondDeck.description, 'Test description');
   assert.equal(secondDeck.card(0).name, 'Test Card');
-  assert.equal(secondDeck.image(secondDeck.card(0)), './assets/test.webp');
+  assert.equal(secondDeck.image(secondDeck.card(0)), './assets/decks/test/test.webp');
 });
 
 test('service worker shell references real project files', function() {

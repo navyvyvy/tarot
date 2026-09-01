@@ -25,7 +25,7 @@ window.LOCALE = {
     modeDictionaryDesc: '메이저·마이너 78장의 상징과 정·역방향 해석을 찾아보세요',
 
     /* 스텝 레이블 */
-    stepDeck:    'I · 덱 선택',
+    stepPool:    'I · 카드 범위',
     stepSpread:  'II · 스프레드',
     stepPick:    'III · 카드 선택',
     stepResult:  'IV · 카드 결과',

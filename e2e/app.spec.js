@@ -166,13 +166,13 @@ test('서비스 워커는 앱 셸만 먼저 캐시한다', async function({ page
   await page.evaluate(async function() { await navigator.serviceWorker.ready; });
   await expect.poll(async function() {
     return page.evaluate(async function() {
-      const cache = await caches.open('noru-app-v63');
+      const cache = await caches.open('noru-app-v64');
       return (await cache.keys()).length;
     });
   }).toBeGreaterThan(0);
 
   const cached = await page.evaluate(async function() {
-    const cache = await caches.open('noru-app-v63');
+    const cache = await caches.open('noru-app-v64');
     return (await cache.keys()).map(function(request) { return request.url; });
   });
   expect(cached.filter(function(url) { return url.includes('/assets/'); }).length).toBeLessThanOrEqual(3);
@@ -225,7 +225,7 @@ test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미�
   await page.goto('/');
 
   await page.getByRole('button', { name: /관계 흐름 서로의 감정과 관계의 방향/ }).click();
-  await expect(page.getByRole('heading', { name: '어떤 덱으로 카드를 펼쳐볼까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '어떤 카드까지 섞을까요?' })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('heading', { name: '오늘은 무엇을 살펴볼까요?' })).toBeVisible();
   await expect(page.locator('.mode-card.is-selected, .topic-btn.is-selected')).toHaveCount(0);
@@ -233,7 +233,7 @@ test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미�
   await page.getByRole('button', { name: /관계 흐름 서로의 감정과 관계의 방향/ }).click();
   await page.getByRole('button', { name: /스프레드 선택/ }).click();
   await page.goBack();
-  await expect(page.getByRole('heading', { name: '어떤 덱으로 카드를 펼쳐볼까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '어떤 카드까지 섞을까요?' })).toBeVisible();
   await page.getByRole('button', { name: /스프레드 선택/ }).click();
   await expect(page.locator('.count-preview')).toHaveCount(5);
   await page.getByRole('button', { name: '카드 섞기' }).click();
@@ -346,7 +346,7 @@ test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미�
   expect(png.readUInt32BE(20)).toBeGreaterThanOrEqual(1350);
   expect(png.length).toBeGreaterThan(20_000);
   await page.getByRole('link', { name: '내 타로 보기' }).click();
-  await expect(page.getByRole('heading', { name: '어떤 덱으로 카드를 펼쳐볼까요?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '어떤 카드까지 섞을까요?' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
