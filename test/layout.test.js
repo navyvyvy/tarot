@@ -81,9 +81,14 @@ test('topic presets and shared result use one readable result sheet', function()
   assert.match(css, /@media[\s\S]*\.mode-row, \.topic-grid\s*\{[^}]*grid-template-columns:\s*1fr/);
   assert.match(css, /\.reading-cards\.is-many\s*\{[^}]*grid-template-columns:\s*repeat\(2/);
   assert.match(css, /\.reading-card-art img\s*\{[^}]*object-fit:\s*contain/);
+  assert.match(css, /\.reading-card-art img\s*\{[^}]*height:\s*auto/);
+  assert.match(css, /\.share-preview-card img\s*\{[^}]*height:\s*auto/);
   assert.match(index, /data-topic="general"/);
   assert.match(index, /data-topic="love"/);
   assert.match(index, /<strong>전체 흐름<\/strong>/);
+  assert.match(index, /property="og:image" content="https:\/\/navyvyvy\.github\.io\/tarot\/assets\/noru-og\.png"/);
+  assert.match(index, /name="twitter:card" content="summary_large_image"/);
+  assert.match(index, /<img[^>]+width="400" height="691"/);
   assert.doesNotMatch(index, /id="mT"|birth-method-note/);
   assert.match(index, /id="readingCards"/);
   assert.match(index, /id="extraReadings"/);
@@ -109,6 +114,7 @@ test('topic presets and shared result use one readable result sheet', function()
   assert.match(summary, /function openSharedResultPage\(\)/);
   assert.match(summary, /decodeReading/);
   assert.match(summary, /cardImgUrl\(entry\.card\)/);
+  assert.match(summary, /width="400" height="691" loading="lazy"/);
   assert.match(summary, /function drawCard\(entry,image,x,y\)/);
   assert.match(summary, /summary\.mainEntries/);
   assert.match(summary, /summary\.extraEntries/);

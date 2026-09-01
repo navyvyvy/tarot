@@ -62,6 +62,19 @@ test('shared reading tokens preserve the exact spread and reject invalid data', 
   });
 
   assert.deepEqual(core.decodeReading(token), {
+    version: 2,
+    topic: 'love',
+    deck: 'all',
+    count: 3,
+    cards: [
+      { id: 6, isRev: false },
+      { id: 36, isRev: true },
+      { id: 21, isRev: false }
+    ]
+  });
+  assert.equal(token.split('.')[0], '2');
+  assert.deepEqual(core.decodeReading('1.l.a.3.6u-10r-lu'), {
+    version: 1,
     topic: 'love',
     deck: 'all',
     count: 3,
@@ -93,8 +106,11 @@ test('service worker shell references real project files', function() {
     const localFile = file.split('?')[0];
     assert.ok(fs.existsSync(path.join(__dirname, '..', localFile)), file);
   });
-  assert.doesNotMatch(source, /cards\.js/);
-  assert.doesNotMatch(source, /CARD_ASSETS|Object\.values\(self\.CARD_CONFIG\)|APP_SHELL\.concat/);
+  assert.match(source, /importScripts\('\.\/card\.js'\)/);
+  assert.match(source, /const CARD_CACHE_NAME = 'noru-cards-v1'/);
+  assert.match(source, /const CARD_ASSETS = Object\.values\(self\.CARD_CONFIG\)/);
+  assert.match(source, /CACHE_ALL_CARDS/);
+  assert.doesNotMatch(shell, /assets\//);
   assert.match(source, /cache\.addAll\(APP_SHELL\)/);
 });
 
@@ -111,6 +127,9 @@ test('spread meanings and card symbolism stay complete', function() {
   assert.doesNotMatch(locale.spreads[3].desc, /가장 오래된/);
   assert.doesNotMatch(locale.spreads[10].desc, /15세기/);
   assert.equal(locale.spreads[7].pos[3], '의지와 해결책');
+  assert.ok(Object.values(locale.spreads).flatMap(function(spread) { return spread.pos; }).every(function(position) {
+    return locale.positionGuides[position];
+  }));
   assert.equal(locale.symbolism.major.length, 22);
   assert.equal(Object.keys(locale.symbolism.minor).length, 56);
   assert.ok(locale.symbolism.major.every(Boolean));

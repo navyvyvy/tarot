@@ -1,10 +1,10 @@
 {
   "name": "noru-tarot",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "test": "node --test",
-    "test:e2e": "playwright test --reporter=list",
+    "test:e2e": "playwright test",
     "check": "node --check app.js && node --check detail.js && node --check dictionary.js && node --check summary.js && node --check core.js && node --check card.js && node --check locale/ko.js && node --check sw.js && node --check playwright.config.js"
   },
   "devDependencies": {

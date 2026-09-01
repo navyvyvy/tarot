@@ -66,7 +66,7 @@
     var topics = { general: 'g', love: 'l', career: 'c', money: 'm' };
     var decks = { major: 'm', minor: 'n', all: 'a' };
     if (!reading || !topics[reading.topic] || !decks[reading.deck] || !Array.isArray(reading.cards)) return '';
-    var token = ['1', topics[reading.topic], decks[reading.deck], reading.count,
+    var token = ['2', topics[reading.topic], decks[reading.deck], reading.count,
       reading.cards.map(function(card) {
         return Number(card.id).toString(36) + (card.isRev ? 'r' : 'u');
       }).join('-')].join('.');
@@ -79,7 +79,7 @@
     var topics = { g: 'general', l: 'love', c: 'career', m: 'money' };
     var decks = { m: 'major', n: 'minor', a: 'all' };
     var count = Number(parts[3]);
-    if (parts.length !== 5 || parts[0] !== '1' || !topics[parts[1]] || !decks[parts[2]] || [1, 3, 5, 7, 10].indexOf(count) < 0) return null;
+    if (parts.length !== 5 || ['1', '2'].indexOf(parts[0]) < 0 || !topics[parts[1]] || !decks[parts[2]] || [1, 3, 5, 7, 10].indexOf(count) < 0) return null;
     var cards = parts[4] ? parts[4].split('-').map(function(value) {
       var match = value.match(/^([0-9a-z]+)([ur])$/);
       return match ? { id: parseInt(match[1], 36), isRev: match[2] === 'r' } : null;
@@ -90,7 +90,7 @@
       return Number.isInteger(id) && id >= 0 && id < 78 && (deck === 'all' || (deck === 'major' ? id < 22 : id >= 22));
     });
     if (cards.length < count || cards.length > 78 || !validIds || new Set(ids).size !== ids.length) return null;
-    return { topic: topics[parts[1]], deck: deck, count: count, cards: cards };
+    return { version: Number(parts[0]), topic: topics[parts[1]], deck: deck, count: count, cards: cards };
   }
 
   return { shuffleDeck: shuffleDeck, calculateBirthCard: calculateBirthCard, summarizeReading: summarizeReading, encodeReading: encodeReading, decodeReading: decodeReading };

@@ -31,7 +31,7 @@
     return guides[card.suitCode]||'기대하는 결과보다 현재 조정할 수 있는 선택과 자원을 먼저 살펴보세요.';
   }
 
-  function entryText(entry){
+  function cardMeaning(entry){
     var card=entry.card;
     var suit=suitByCode(card.suitCode);
     if(S.topic==='love'){
@@ -48,24 +48,63 @@
     return card.isRev?card.rv:card.up;
   }
 
+  function entryText(entry){
+    var guide=(window.LOCALE.positionGuides||{})[entry.position];
+    var context=guide?entry.position+' 자리의 '+cardName(entry.card)+' 카드는 '+guide+' ':'';
+    return context+cardMeaning(entry);
+  }
+
   function firstSentence(text){
     var match=String(text||'').match(/^[^.!?]+[.!?]?/);
     return match?match[0].trim():'';
   }
 
-  function overviewText(summary,withExtras){
+  function entryLabel(entry){
+    return cardName(entry.card)+' '+(entry.card.isRev?'역방향':'정방향');
+  }
+
+  function legacyOverviewText(summary,withExtras){
     var first=summary.entries[0];
     var last=summary.entries[summary.entries.length-1];
     if(!first)return '';
     if(summary.entries.length===1){
-      return '이번에 중심으로 나온 카드는 '+cardName(first.card)+' '+(first.card.isRev?'역방향':'정방향')+'입니다. '+entryText(first);
+      return '이번에 중심으로 나온 카드는 '+entryLabel(first)+'입니다. '+cardMeaning(first);
     }
     if(summary.entries.length===2){
-      return '추가 카드까지 함께 보면 '+first.position+'의 '+cardName(first.card)+' 카드에 '+last.position+'의 '+cardName(last.card)+' 카드가 더해집니다. '+firstSentence(entryText(first))+' '+firstSentence(entryText(last))+(summary.pattern?' '+summary.pattern:'');
+      return '추가 카드까지 함께 보면 '+first.position+'의 '+cardName(first.card)+' 카드에 '+last.position+'의 '+cardName(last.card)+' 카드가 더해집니다. '+firstSentence(cardMeaning(first))+' '+firstSentence(cardMeaning(last))+(summary.pattern?' '+summary.pattern:'');
     }
     var middle=summary.entries[Math.floor(summary.entries.length/2)];
     var prefix=withExtras?'추가 카드까지 함께 보면 ':'';
-    return prefix+'카드 흐름은 '+first.position+'의 '+cardName(first.card)+', '+middle.position+'의 '+cardName(middle.card)+', '+last.position+'의 '+cardName(last.card)+' 순서로 이어집니다. '+middle.position+'에서는 '+firstSentence(entryText(middle))+' '+last.position+'에서는 '+firstSentence(entryText(last))+(summary.pattern?' '+summary.pattern:'');
+    return prefix+'카드 흐름은 '+first.position+'의 '+cardName(first.card)+', '+middle.position+'의 '+cardName(middle.card)+', '+last.position+'의 '+cardName(last.card)+' 순서로 이어집니다. '+middle.position+'에서는 '+firstSentence(cardMeaning(middle))+' '+last.position+'에서는 '+firstSentence(cardMeaning(last))+(summary.pattern?' '+summary.pattern:'');
+  }
+
+  function overviewText(summary){
+    var entries=summary.entries;
+    if(!entries.length)return '';
+    if(entries.length===1)return '이번에 중심으로 나온 카드는 '+entryLabel(entries[0])+'입니다. '+cardMeaning(entries[0]);
+    var labels=entries.map(function(entry){return entry.position+'의 '+entryLabel(entry);});
+    var flow='';
+    if(entries.length===3){
+      flow='과거의 '+entryLabel(entries[0])+'에서 현재의 '+entryLabel(entries[1])+', 미래의 '+entryLabel(entries[2])+'로 흐름이 이어집니다.';
+    }else if(entries.length===5){
+      flow='현재의 '+entryLabel(entries[0])+'을 중심으로, 목표에는 '+entryLabel(entries[1])+', 근원에는 '+entryLabel(entries[2])+', 과거의 영향에는 '+entryLabel(entries[3])+', 예상 결과에는 '+entryLabel(entries[4])+'이 놓였습니다.';
+    }else if(entries.length===7){
+      flow='과거의 '+entryLabel(entries[0])+'에서 현재의 '+entryLabel(entries[1])+', 가까운 미래의 '+entryLabel(entries[2])+'로 이어집니다. 해결책은 '+entryLabel(entries[3])+', 주변 환경은 '+entryLabel(entries[4])+', 장애물은 '+entryLabel(entries[5])+', 예상 결과는 '+entryLabel(entries[6])+'입니다.';
+    }else if(entries.length===10){
+      flow='현재의 '+entryLabel(entries[0])+'에 '+entryLabel(entries[1])+'이 직접 맞물립니다. 목표는 '+entryLabel(entries[2])+', 기반은 '+entryLabel(entries[3])+', 지나가는 과거는 '+entryLabel(entries[4])+', 가까운 미래는 '+entryLabel(entries[5])+'입니다. 태도와 환경에는 '+entryLabel(entries[6])+'과 '+entryLabel(entries[7])+', 희망과 두려움에는 '+entryLabel(entries[8])+', 최종 결과에는 '+entryLabel(entries[9])+'이 놓였습니다.';
+    }else{
+      flow=labels.join(', ')+' 순서로 이어집니다.';
+    }
+    var last=entries[entries.length-1];
+    return flow+' '+last.position+'에서는 '+firstSentence(cardMeaning(last))+(summary.pattern?' '+summary.pattern:'');
+  }
+
+  function extraOverviewText(main,summary){
+    var extras=summary.extraEntries;
+    var labels=extras.slice(0,4).map(entryLabel).join(', ');
+    var remainder=extras.length>4?' 외 '+(extras.length-4)+'장':'';
+    var pattern=summary.pattern&&summary.pattern!==main.pattern?' '+summary.pattern:'';
+    return overviewText(main)+' 추가 카드로 '+labels+remainder+'이 더해졌습니다.'+pattern;
   }
 
   function buildSummary(){
@@ -78,8 +117,11 @@
     summary.extraEntries=summary.entries.slice(S.count);
     main.pattern=patternText(main);
     summary.pattern=patternText(summary);
-    summary.overview=overviewText(main,false);
-    summary.extraOverview=summary.extraEntries.length?overviewText(summary,true):'';
+    var legacy=S.readingVersion===1;
+    summary.overview=legacy?legacyOverviewText(main,false):overviewText(main);
+    summary.extraOverview=summary.extraEntries.length
+      ?(legacy?legacyOverviewText(summary,true):extraOverviewText(main,summary))
+      :'';
     return summary;
   }
 
@@ -100,7 +142,7 @@
     var position=entry.position.indexOf('추가 카드')===0?entry.position.replace('추가 카드','추가'):(index+1)+'. '+entry.position;
     var directionClass=entry.card.isRev?'result-badge result-direction is-reversed':'result-badge result-direction';
     var keywordBadges=(entry.card.keywords||[]).slice(0,2).map(function(keyword){return '<span class="result-badge">'+keyword+'</span>';}).join('');
-    return '<article class="reading-card"><div class="reading-card-summary"><figure class="reading-card-art"><img src="'+cardImgUrl(entry.card)+'" alt="'+name+'" class="'+(entry.card.isRev?'is-reversed':'')+'"><figcaption class="result-name">'+name+'</figcaption></figure></div><div class="reading-card-copy"><strong class="result-label">'+position+'</strong><span class="result-badges"><span class="'+directionClass+'">'+(entry.card.isRev?'역방향':'정방향')+'</span><span class="result-keywords">'+keywordBadges+'</span></span><p>'+entryText(entry)+'</p></div></article>';
+    return '<article class="reading-card"><div class="reading-card-summary"><figure class="reading-card-art"><img src="'+cardImgUrl(entry.card)+'" alt="'+name+'" width="400" height="691" loading="lazy" class="'+(entry.card.isRev?'is-reversed':'')+'"><figcaption class="result-name">'+name+'</figcaption></figure></div><div class="reading-card-copy"><strong class="result-label">'+position+'</strong><span class="result-badges"><span class="'+directionClass+'">'+(entry.card.isRev?'역방향':'정방향')+'</span><span class="result-keywords">'+keywordBadges+'</span></span><p>'+entryText(entry)+'</p></div></article>';
   }
 
   function renderReadingSummary(){
@@ -155,7 +197,7 @@
 
   function previewCardMarkup(entry){
     var name=cardName(entry.card);
-    return '<figure class="share-preview-card"><div><img src="'+cardImgUrl(entry.card)+'" alt="'+name+'" class="'+(entry.card.isRev?'is-reversed':'')+'"></div><figcaption><strong>'+entry.position+'</strong><span>'+name+' '+(entry.card.isRev?'역방향':'정방향')+'</span></figcaption></figure>';
+    return '<figure class="share-preview-card"><div><img src="'+cardImgUrl(entry.card)+'" alt="'+name+'" width="400" height="691" loading="lazy" class="'+(entry.card.isRev?'is-reversed':'')+'"></div><figcaption><strong>'+entry.position+'</strong><span>'+name+' '+(entry.card.isRev?'역방향':'정방향')+'</span></figcaption></figure>';
   }
 
   function renderSharePreview(){
@@ -340,7 +382,7 @@
       return byId[value.id]?Object.assign({},byId[value.id],{isRev:value.isRev}):null;
     });
     if(revealed.some(function(card){return !card;})){showToast('공유 결과를 불러오지 못했습니다.');return;}
-    Object.assign(S,{mode:'tarot',topic:shared.topic,deck:shared.deck,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false});
+    Object.assign(S,{mode:'tarot',topic:shared.topic,deck:shared.deck,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false,readingVersion:shared.version});
     var deckInput=document.querySelector('.deck-input[value="'+S.deck+'"]');
     var countInput=document.querySelector('.count-input[value="'+S.count+'"]');
     if(deckInput)deckInput.checked=true;
@@ -357,6 +399,14 @@
 
   shareButton.addEventListener('click',openShareDialog);
   confirmShareButton.addEventListener('click',shareReading);
+  document.addEventListener('error',function(event){
+    var image=event.target;
+    if(!(image instanceof HTMLImageElement)||!image.closest('.reading-dialog,.share-dialog'))return;
+    var placeholder=document.createElement('span');
+    placeholder.className='card-placeholder';
+    placeholder.textContent=image.alt||'카드 이미지';
+    image.replaceWith(placeholder);
+  },true);
   document.getElementById('shareDialogClose').addEventListener('click',closeShareDialog);
   shareDialog.addEventListener('click',function(event){if(event.target===shareDialog)closeShareDialog();});
   document.getElementById('openReadingDetails').addEventListener('click',function(){openReadingDialog(readingDialog);});

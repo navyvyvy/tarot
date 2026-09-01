@@ -113,6 +113,8 @@ function makeImg(card, isRev) {
     img.src = cardImgUrl(card);
     img.alt = cardName(card);
     img.loading = 'lazy';
+    img.width = 400;
+    img.height = 691;
 
     let classes = ['card-image'];
     if (isRev) classes.push('is-reversed');
@@ -220,7 +222,7 @@ function cardName(card){
   return fmt.replace('{suit}',suit.n).replace('{num}',num.label);
 }
 
-var S=window.NORU.state={mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5};
+var S=window.NORU.state={mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2};
 
 function deckCards(){
   return S.deck==='major'
@@ -384,7 +386,7 @@ document.getElementById('toS3').addEventListener('click',function() {
 
 function resetAll(){
   history.replaceState(history.state,'',new URL('.',location.href));
-  Object.assign(S,{mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5});
+  Object.assign(S,{mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2});
   document.querySelector('.deck-input[value="major"]').checked=true;
   document.querySelector('.count-input[value="1"]').checked=true;
   document.getElementById('revSlider').value=50;
@@ -424,6 +426,7 @@ function doShuffle(){
   setTimeout(function(){
     try{
       reshuffle();
+      S.readingVersion=2;
       S.selected=[];S.revealed=[];S.adding=false;
       document.getElementById('btnRev').className='btn-rev';
       document.getElementById('s4grid').innerHTML='';
@@ -907,11 +910,22 @@ window.addEventListener('DOMContentLoaded', initializeData);
 
 /* Service Worker 등록 */
 if('serviceWorker' in navigator){
+  function cacheInstalledCards(registration){
+    var connection=navigator.connection;
+    if(connection&&connection.saveData)return;
+    if(registration.active)registration.active.postMessage({type:'CACHE_ALL_CARDS'});
+  }
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('./sw.js')
+      .then(function(registration){
+        if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone)cacheInstalledCards(registration);
+      })
       .catch(function(err){
         logger.error('SW 등록 실패:', err);
         showToast(window.LOCALE&&window.LOCALE.ui.errorOffline||'오프라인 저장 기능을 시작하지 못했습니다.');
       });
+  });
+  window.addEventListener('appinstalled',function(){
+    navigator.serviceWorker.ready.then(cacheInstalledCards);
   });
 }

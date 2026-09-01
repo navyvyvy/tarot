@@ -425,7 +425,8 @@ body:has(#s2.ON) .wrap > header .tagline, body:has(#s3.ON) .wrap > header .tagli
 .reading-card:first-child, .reading-cards.is-many .reading-card:nth-child(2) { border-top: 0; }
 .reading-card-summary { grid-area: summary; display: flex; min-width: 0; flex-direction: column; align-items: center; }
 .reading-card-art { width: 96px; margin: 0; }
-.reading-card-art img { display: block; width: 100%; aspect-ratio: 400 / 691; object-fit: contain; border: 1px solid var(--line-strong); border-radius: 8px; background: #110824; box-shadow: 0 10px 26px rgba(0, 0, 0, .3); }
+.reading-card-art img { display: block; width: 100%; height: auto; aspect-ratio: 400 / 691; object-fit: contain; border: 1px solid var(--line-strong); border-radius: 8px; background: #110824; box-shadow: 0 10px 26px rgba(0, 0, 0, .3); }
+.reading-card-art > .card-placeholder, .share-preview-card > div > .card-placeholder { aspect-ratio: 400 / 691; border-radius: 8px; }
 .reading-card-art img.is-reversed { transform: rotate(180deg); }
 .reading-card-art .result-name { text-align: center; }
 .reading-card-copy { grid-area: copy; align-self: center; min-width: 0; text-align: left; }
@@ -536,7 +537,7 @@ dialog::backdrop { background: rgba(3, 2, 8, .84); backdrop-filter: blur(7px); }
 .share-preview-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
 .share-preview-card { width: 112px; margin: 0; text-align: center; }
 .share-preview-card > div { width: 100%; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; background: #110824; }
-.share-preview-card img { display: block; width: 100%; aspect-ratio: 400 / 691; object-fit: contain; }
+.share-preview-card img { display: block; width: 100%; height: auto; aspect-ratio: 400 / 691; object-fit: contain; }
 .share-preview-card img.is-reversed { transform: rotate(180deg); }
 .share-preview-card figcaption { margin-top: 6px; line-height: 1.35; }
 .share-preview-card figcaption strong, .share-preview-card figcaption span { display: block; word-break: keep-all; }

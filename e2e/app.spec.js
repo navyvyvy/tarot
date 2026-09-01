@@ -74,6 +74,9 @@ test('켈틱 크로스는 열 장을 겹치지 않게 보여준다', async funct
   await page.getByRole('tab', { name: '관계·직업' }).click();
   await expect(page.locator('.modal-context-note')).toHaveCount(2);
   await expect(page.locator('.modal-context-note').first()).toContainText('이 카드의 역방향 의미');
+  const overview = await page.locator('#readingOverview').textContent();
+  const names = await grid.locator('.result-name').allTextContents();
+  for (const name of names) expect(overview).toContain(name);
   expect(errors).toEqual([]);
 });
 
@@ -104,7 +107,7 @@ test('선택한 카드와 추가 카드는 같은 크기로 결과에 모인다'
   await page.getByRole('button', { name: '선택한 카드 펼치기' }).click();
   await expect(page.locator('#s4grid .result-card')).toHaveCount(3);
   await expect(page.locator('#readingSpreadTitle')).toHaveClass(/sr-only/);
-  await expect(page.locator('#readingOverview')).toContainText('카드 흐름은');
+  await expect(page.locator('#readingOverview')).toContainText('과거의');
   if (testInfo.project.name === 'desktop') {
     const fitsViewport = await page.evaluate(function() {
       return document.getElementById('s4').getBoundingClientRect().bottom <= innerHeight + 1;
@@ -130,13 +133,13 @@ test('서비스 워커는 앱 셸만 먼저 캐시한다', async function({ page
   await page.evaluate(async function() { await navigator.serviceWorker.ready; });
   await expect.poll(async function() {
     return page.evaluate(async function() {
-      const cache = await caches.open('noru-v57');
+      const cache = await caches.open('noru-app-v59');
       return (await cache.keys()).length;
     });
   }).toBeGreaterThan(0);
 
   const cached = await page.evaluate(async function() {
-    const cache = await caches.open('noru-v57');
+    const cache = await caches.open('noru-app-v59');
     return (await cache.keys()).map(function(request) { return request.url; });
   });
   expect(cached.filter(function(url) { return url.includes('/assets/'); }).length).toBeLessThanOrEqual(3);
@@ -200,6 +203,7 @@ test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미�
   await expect(page.locator('#readingCards')).toBeVisible();
   await expect(page.locator('#readingCards .reading-card-art .result-name')).not.toBeEmpty();
   await expect(page.locator('#readingCards .reading-card-copy .result-label')).toHaveText('1. 지금의 메시지');
+  await expect(page.locator('#readingCards .reading-card-copy p')).toContainText('지금의 메시지 자리의');
   await expect(page.locator('#readingCards .result-direction')).toHaveCount(1);
   await expect(page.locator('#readingCards .result-keywords .result-badge')).toHaveCount(2);
   await expect(page.locator('#readingCards .reading-card-art .result-name')).toHaveCSS('text-align', 'center');
