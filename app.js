@@ -216,7 +216,7 @@ function cardName(card){
   return full.name||'';
 }
 
-var S=window.NORU.state={mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2};
+var S=window.NORU.state={mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3};
 
 function poolCards(){
   return activeDeck().cards(S.pool);
@@ -376,7 +376,7 @@ document.getElementById('toS3').addEventListener('click',function() {
 
 function resetAll(){
   history.replaceState(history.state,'',new URL('.',location.href));
-  Object.assign(S,{mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2});
+  Object.assign(S,{mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3});
   document.querySelector('.pool-input[value="major"]').checked=true;
   document.querySelector('.count-input[value="1"]').checked=true;
   document.getElementById('revSlider').value=50;
@@ -416,7 +416,7 @@ function doShuffle(){
   setTimeout(function(){
     try{
       reshuffle();
-      S.readingVersion=2;
+      S.readingVersion=3;
       S.selected=[];S.revealed=[];S.adding=false;
       document.getElementById('btnRev').className='btn-rev';
       document.getElementById('s4grid').innerHTML='';

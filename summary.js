@@ -190,7 +190,7 @@
   window.NORU.renderReadingSummary=renderReadingSummary;
 
   function createShareUrl(){
-    var token=window.NORU.core.encodeReading({topic:S.topic,deck:S.pool,count:S.count,cards:S.revealed});
+    var token=window.NORU.core.encodeReading({topic:S.topic,deckId:S.deckId,pool:S.pool,count:S.count,cards:S.revealed});
     if(!token)return '';
     var canonical=document.querySelector('link[rel="canonical"]');
     var url=new URL(canonical?canonical.href:location.href);
@@ -391,13 +391,14 @@
     if(!token)return;
     var shared=window.NORU.core.decodeReading(token);
     if(!shared){showToast('공유 결과 링크가 올바르지 않습니다.');return;}
-    var deck=window.NORU.deckCatalog.get('rws');
+    var deck=window.NORU.deckCatalog.get(shared.deckId);
+    if(!deck){showToast('이 결과에 사용된 카드 덱을 찾지 못했습니다.');return;}
     var revealed=shared.cards.map(function(value){
       var card=deck.card(value.id);
       return card?Object.assign({},card,{isRev:value.isRev}):null;
     });
     if(revealed.some(function(card){return !card;})){showToast('공유 결과를 불러오지 못했습니다.');return;}
-    Object.assign(S,{mode:'tarot',topic:shared.topic,deckId:'rws',pool:shared.deck,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false,readingVersion:shared.version});
+    Object.assign(S,{mode:'tarot',topic:shared.topic,deckId:shared.deckId,pool:shared.pool,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false,readingVersion:shared.version});
     var poolInput=document.querySelector('.pool-input[value="'+S.pool+'"]');
     var countInput=document.querySelector('.count-input[value="'+S.count+'"]');
     if(poolInput)poolInput.checked=true;

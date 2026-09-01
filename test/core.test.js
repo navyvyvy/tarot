@@ -52,7 +52,8 @@ test('summarizeReading counts directions and only reports a unique dominant suit
 test('shared reading tokens preserve the exact spread and reject invalid data', function() {
   const token = core.encodeReading({
     topic: 'love',
-    deck: 'all',
+    deckId: 'rws',
+    pool: 'all',
     count: 3,
     cards: [
       { id: 6, isRev: false },
@@ -62,9 +63,10 @@ test('shared reading tokens preserve the exact spread and reject invalid data', 
   });
 
   assert.deepEqual(core.decodeReading(token), {
-    version: 2,
+    version: 3,
     topic: 'love',
-    deck: 'all',
+    deckId: 'rws',
+    pool: 'all',
     count: 3,
     cards: [
       { id: 6, isRev: false },
@@ -72,11 +74,12 @@ test('shared reading tokens preserve the exact spread and reject invalid data', 
       { id: 21, isRev: false }
     ]
   });
-  assert.equal(token.split('.')[0], '2');
+  assert.equal(token.split('.')[0], '3');
   assert.deepEqual(core.decodeReading('1.l.a.3.6u-10r-lu'), {
     version: 1,
     topic: 'love',
-    deck: 'all',
+    deckId: 'rws',
+    pool: 'all',
     count: 3,
     cards: [
       { id: 6, isRev: false },
@@ -84,6 +87,8 @@ test('shared reading tokens preserve the exact spread and reject invalid data', 
       { id: 21, isRev: false }
     ]
   });
+  assert.deepEqual(core.decodeReading('2.l.a.3.6u-10r-lu'), Object.assign({}, core.decodeReading('1.l.a.3.6u-10r-lu'), { version: 2 }));
+  assert.equal(core.decodeReading('3.l.bad.deck.a.3.6u-10r-lu'), null);
   assert.equal(core.decodeReading('1.l.m.3.6u-36r-21u'), null);
   assert.equal(core.decodeReading('broken'), null);
 });

@@ -64,9 +64,9 @@
 
   function encodeReading(reading) {
     var topics = { general: 'g', love: 'l', career: 'c', money: 'm' };
-    var decks = { major: 'm', minor: 'n', all: 'a' };
-    if (!reading || !topics[reading.topic] || !decks[reading.deck] || !Array.isArray(reading.cards)) return '';
-    var token = ['2', topics[reading.topic], decks[reading.deck], reading.count,
+    var pools = { major: 'm', minor: 'n', all: 'a' };
+    if (!reading || !topics[reading.topic] || !/^[a-z0-9-]+$/.test(reading.deckId || '') || !pools[reading.pool] || !Array.isArray(reading.cards)) return '';
+    var token = ['3', topics[reading.topic], reading.deckId, pools[reading.pool], reading.count,
       reading.cards.map(function(card) {
         return Number(card.id).toString(36) + (card.isRev ? 'r' : 'u');
       }).join('-')].join('.');
@@ -77,20 +77,23 @@
     if (typeof token !== 'string') return null;
     var parts = token.split('.');
     var topics = { g: 'general', l: 'love', c: 'career', m: 'money' };
-    var decks = { m: 'major', n: 'minor', a: 'all' };
-    var count = Number(parts[3]);
-    if (parts.length !== 5 || ['1', '2'].indexOf(parts[0]) < 0 || !topics[parts[1]] || !decks[parts[2]] || [1, 3, 5, 7, 10].indexOf(count) < 0) return null;
-    var cards = parts[4] ? parts[4].split('-').map(function(value) {
+    var pools = { m: 'major', n: 'minor', a: 'all' };
+    var legacy = parts[0] === '1' || parts[0] === '2';
+    var deckId = legacy ? 'rws' : parts[2];
+    var pool = pools[parts[legacy ? 2 : 3]];
+    var count = Number(parts[legacy ? 3 : 4]);
+    var cardPart = parts[legacy ? 4 : 5];
+    if ((legacy ? parts.length !== 5 : parts.length !== 6 || parts[0] !== '3') || !topics[parts[1]] || !/^[a-z0-9-]+$/.test(deckId || '') || !pool || [1, 3, 5, 7, 10].indexOf(count) < 0) return null;
+    var cards = cardPart ? cardPart.split('-').map(function(value) {
       var match = value.match(/^([0-9a-z]+)([ur])$/);
       return match ? { id: parseInt(match[1], 36), isRev: match[2] === 'r' } : null;
     }) : [];
-    var deck = decks[parts[2]];
     var ids = cards.map(function(card) { return card && card.id; });
     var validIds = ids.every(function(id) {
-      return Number.isInteger(id) && id >= 0 && id < 78 && (deck === 'all' || (deck === 'major' ? id < 22 : id >= 22));
+      return Number.isInteger(id) && id >= 0 && id < 78 && (pool === 'all' || (pool === 'major' ? id < 22 : id >= 22));
     });
     if (cards.length < count || cards.length > 78 || !validIds || new Set(ids).size !== ids.length) return null;
-    return { version: Number(parts[0]), topic: topics[parts[1]], deck: deck, count: count, cards: cards };
+    return { version: Number(parts[0]), topic: topics[parts[1]], deckId: deckId, pool: pool, count: count, cards: cards };
   }
 
   return { shuffleDeck: shuffleDeck, calculateBirthCard: calculateBirthCard, summarizeReading: summarizeReading, encodeReading: encodeReading, decodeReading: decodeReading };
