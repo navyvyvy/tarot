@@ -930,14 +930,14 @@ if('serviceWorker' in navigator){
     if(!manual&&connection&&connection.saveData)return Promise.resolve(null);
     if(!registration.active)return Promise.reject(new Error('활성 서비스 워커가 없습니다.'));
     if(!manual){
-      registration.active.postMessage({type:'CACHE_ALL_CARDS'});
+      registration.active.postMessage({type:'CACHE_ALL_CARDS',deckId:S.deckId});
       return Promise.resolve(null);
     }
     return new Promise(function(resolve,reject){
       var channel=new MessageChannel();
       channel.port1.onmessage=function(event){channel.port1.close();resolve(event.data);};
       channel.port1.onmessageerror=function(){reject(new Error('오프라인 저장 결과를 받지 못했습니다.'));};
-      registration.active.postMessage({type:'CACHE_ALL_CARDS'},[channel.port2]);
+      registration.active.postMessage({type:'CACHE_ALL_CARDS',deckId:S.deckId},[channel.port2]);
     });
   }
 
@@ -950,7 +950,7 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.ready
       .then(function(registration){return cacheInstalledCards(registration,true);})
       .then(function(result){
-        if(!result||result.type!=='CACHE_ALL_CARDS_RESULT')throw new Error('잘못된 오프라인 저장 결과입니다.');
+        if(!result||result.type!=='CACHE_ALL_CARDS_RESULT'||result.error)throw new Error('잘못된 오프라인 저장 결과입니다.');
         if(result.failed===0){
           offlineSave.classList.add('is-complete');
           offlineSave.textContent='저장 완료';

@@ -132,7 +132,8 @@ test('service worker shell references real project files', function() {
   });
   assert.match(source, /importScripts\('\.\/card\.js'\)/);
   assert.match(source, /const CARD_CACHE_NAME = 'noru-cards-v1'/);
-  assert.match(source, /const CARD_ASSETS = Object\.values\(self\.CARD_CONFIG\)/);
+  assert.match(source, /self\.NORU\.deckCatalog\.get\(deckId\)/);
+  assert.doesNotMatch(source, /CARD_CONFIG|CARD_ASSETS/);
   assert.match(source, /CACHE_ALL_CARDS/);
   assert.doesNotMatch(shell, /assets\//);
   assert.match(source, /cache\.addAll\(APP_SHELL\)/);

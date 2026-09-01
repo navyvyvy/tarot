@@ -49,7 +49,6 @@
   register({ id: 'rws', name: '유니버설 웨이트', images: images });
   root.NORU = root.NORU || {};
   root.NORU.deckCatalog = catalog;
-  root.CARD_CONFIG = images;
   if (typeof module === 'object' && module.exports) module.exports = catalog;
 })(typeof self !== 'undefined' ? self : globalThis, function() {
   return {

@@ -166,13 +166,13 @@ test('서비스 워커는 앱 셸만 먼저 캐시한다', async function({ page
   await page.evaluate(async function() { await navigator.serviceWorker.ready; });
   await expect.poll(async function() {
     return page.evaluate(async function() {
-      const cache = await caches.open('noru-app-v62');
+      const cache = await caches.open('noru-app-v63');
       return (await cache.keys()).length;
     });
   }).toBeGreaterThan(0);
 
   const cached = await page.evaluate(async function() {
-    const cache = await caches.open('noru-app-v62');
+    const cache = await caches.open('noru-app-v63');
     return (await cache.keys()).map(function(request) { return request.url; });
   });
   expect(cached.filter(function(url) { return url.includes('/assets/'); }).length).toBeLessThanOrEqual(3);

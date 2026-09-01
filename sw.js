@@ -1,20 +1,19 @@
 importScripts('./card.js');
 
 const APP_CACHE_PREFIX = 'noru-app-';
-const CACHE_NAME = 'noru-app-v62';
+const CACHE_NAME = 'noru-app-v63';
 const CARD_CACHE_NAME = 'noru-cards-v1';
-const CARD_ASSETS = Object.values(self.CARD_CONFIG).map(function(filename) { return './assets/' + filename; });
 const APP_SHELL = [
   './',
   './index.html',
-  './css/style.css?v=62',
-  './core.js?v=58',
-  './card.js?v=58',
-  './locale/ko.js?v=58',
-  './app.js?v=62',
-  './detail.js?v=58',
-  './dictionary.js?v=58',
-  './summary.js?v=62',
+  './css/style.css?v=63',
+  './core.js?v=63',
+  './card.js?v=63',
+  './locale/ko.js?v=63',
+  './app.js?v=63',
+  './detail.js?v=63',
+  './dictionary.js?v=63',
+  './summary.js?v=63',
   './manifest.json',
   './icon-192.svg',
   './icon-512.svg'
@@ -44,8 +43,15 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('message', function(event) {
   if (!event.data || event.data.type !== 'CACHE_ALL_CARDS') return;
   var port=event.ports&&event.ports[0];
+  var deckId=event.data.deckId||'rws';
+  var deck=self.NORU.deckCatalog.get(deckId);
+  if(!deck){
+    if(port)port.postMessage({type:'CACHE_ALL_CARDS_RESULT',deckId:deckId,total:0,cached:0,failed:0,error:'DECK_NOT_FOUND'});
+    return;
+  }
+  var assets=deck.assets();
   var caching=caches.open(CARD_CACHE_NAME).then(function(cache) {
-      return Promise.all(CARD_ASSETS.map(function(url) {
+      return Promise.all(assets.map(function(url) {
         return cache.match(url).then(function(cached) {
           if(cached)return true;
           return cache.add(url).then(function(){return true;});
@@ -53,9 +59,9 @@ self.addEventListener('message', function(event) {
       }));
     }).then(function(results){
       var cached=results.filter(Boolean).length;
-      return {type:'CACHE_ALL_CARDS_RESULT',total:CARD_ASSETS.length,cached:cached,failed:CARD_ASSETS.length-cached};
+      return {type:'CACHE_ALL_CARDS_RESULT',deckId:deckId,total:assets.length,cached:cached,failed:assets.length-cached};
     }).catch(function(){
-      return {type:'CACHE_ALL_CARDS_RESULT',total:CARD_ASSETS.length,cached:0,failed:CARD_ASSETS.length};
+      return {type:'CACHE_ALL_CARDS_RESULT',deckId:deckId,total:assets.length,cached:0,failed:assets.length};
     }).then(function(result){
       if(port)port.postMessage(result);
     });
