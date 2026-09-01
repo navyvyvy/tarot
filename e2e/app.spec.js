@@ -107,7 +107,15 @@ test('선택한 카드와 추가 카드는 같은 크기로 결과에 모인다'
   await page.getByRole('button', { name: '선택한 카드 펼치기' }).click();
   await expect(page.locator('#s4grid .result-card')).toHaveCount(3);
   await expect(page.locator('#readingSpreadTitle')).toHaveClass(/sr-only/);
-  await expect(page.locator('#readingOverview')).toContainText('과거의');
+  await expect(page.locator('#readingOverview')).toContainText('과거에는');
+  const mainMeanings = await page.evaluate(function() {
+    return S.revealed.slice(0, S.count).map(function(card) {
+      const text = card.isRev ? card.rv : card.up;
+      const sentence = String(text || '').match(/^[^.!?]+[.!?]?/);
+      return sentence ? sentence[0].trim() : '';
+    });
+  });
+  for (const meaning of mainMeanings) await expect(page.locator('#readingOverview')).toContainText(meaning);
   if (testInfo.project.name === 'desktop') {
     const fitsViewport = await page.evaluate(function() {
       return document.getElementById('s4').getBoundingClientRect().bottom <= innerHeight + 1;
@@ -118,6 +126,13 @@ test('선택한 카드와 추가 카드는 같은 크기로 결과에 모인다'
   await page.locator('.track-card').first().click();
   await page.getByRole('button', { name: '결과에 추가하기' }).click();
   await expect(page.locator('#s4extraGrid .result-card')).toHaveCount(1);
+  const extraMeaning = await page.evaluate(function() {
+    const card = S.revealed[S.count];
+    const text = card.isRev ? card.rv : card.up;
+    const sentence = String(text || '').match(/^[^.!?]+[.!?]?/);
+    return sentence ? sentence[0].trim() : '';
+  });
+  await expect(page.locator('#readingOverview')).toContainText(extraMeaning);
   const resultWidths = await page.locator('#s4 .result-frame').evaluateAll(function(frames) { return frames.map(function(frame) { return parseFloat(getComputedStyle(frame).width); }); });
   expect(new Set(resultWidths.map(Math.round)).size).toBe(1);
   if (testInfo.project.name === 'desktop') {
@@ -128,21 +143,73 @@ test('선택한 카드와 추가 카드는 같은 크기로 결과에 모인다'
   }
 });
 
+test('탄생연도는 현재 연도부터 120년 전까지 제공한다', async function({ page }) {
+  await page.goto('/?mode=birth');
+  const currentYear = await page.evaluate(function() { return new Date().getFullYear(); });
+  const years = await page.locator('#bYear option').evaluateAll(function(options) {
+    return options.map(function(option) { return option.value; }).filter(Boolean);
+  });
+
+  expect(years).toHaveLength(121);
+  expect(years[0]).toBe(String(currentYear));
+  expect(years[years.length - 1]).toBe(String(currentYear - 120));
+
+  await page.locator('#bYear').selectOption(String(currentYear - 120));
+  await page.locator('#bMonth').selectOption('1');
+  await page.locator('#bDay').selectOption('1');
+  await page.getByRole('button', { name: '나의 탄생 카드 찾기' }).click();
+  await expect(page.locator('#birthRes .result-card').first()).toBeVisible();
+});
+
 test('서비스 워커는 앱 셸만 먼저 캐시한다', async function({ page }) {
   await page.goto('/');
   await page.evaluate(async function() { await navigator.serviceWorker.ready; });
   await expect.poll(async function() {
     return page.evaluate(async function() {
-      const cache = await caches.open('noru-app-v59');
+      const cache = await caches.open('noru-app-v62');
       return (await cache.keys()).length;
     });
   }).toBeGreaterThan(0);
 
   const cached = await page.evaluate(async function() {
-    const cache = await caches.open('noru-app-v59');
+    const cache = await caches.open('noru-app-v62');
     return (await cache.keys()).map(function(request) { return request.url; });
   });
   expect(cached.filter(function(url) { return url.includes('/assets/'); }).length).toBeLessThanOrEqual(3);
+});
+
+test('78장 덱을 저장하면 실제로 오프라인에서 카드가 열린다', async function({ page }) {
+  test.slow();
+  await page.goto('/');
+  await page.evaluate(async function() {
+    await navigator.serviceWorker.ready;
+    await caches.delete('noru-cards-v1');
+  });
+
+  await page.getByRole('button', { name: '오프라인으로 저장' }).click();
+  await expect(page.locator('#offlineStatus')).toHaveText('78장 저장 완료');
+
+  const cacheState = await page.evaluate(async function() {
+    const cache = await caches.open('noru-cards-v1');
+    const requests = await cache.keys();
+    const responses = await Promise.all(requests.map(function(request) { return cache.match(request); }));
+    return {
+      count: requests.filter(function(request) { return request.url.includes('/assets/'); }).length,
+      complete: responses.every(Boolean)
+    };
+  });
+  expect(cacheState).toEqual({ count: 78, complete: true });
+
+  await page.context().setOffline(true);
+  try {
+    await page.reload();
+    await page.getByRole('button', { name: /카드 사전/ }).click();
+    const image = page.locator('.dictionary-frame img').first();
+    await expect(image).toBeVisible();
+    await expect.poll(function() { return image.evaluate(function(node) { return node.naturalWidth; }); }).toBeGreaterThan(0);
+  } finally {
+    await page.context().setOffline(false);
+  }
 });
 
 test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미지를 저장한다', async function({ page }, testInfo) {
@@ -230,11 +297,14 @@ test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미�
   await expect(page.locator('#readingOverview')).toHaveText(mainOverview);
   await page.getByRole('button', { name: '추가 카드 포함' }).click();
   await expect(page.locator('#readingOverview')).toHaveText(combinedOverview);
-  await page.getByRole('button', { name: '추가 카드별 해석 모아 보기' }).click();
-  await expect(page.getByRole('dialog', { name: '추가 카드의 카드별 해석' })).toBeVisible();
+  await page.getByRole('button', { name: '카드별 해석 모아 보기' }).click();
+  await expect(page.getByRole('dialog', { name: '카드별 해석' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '선택한 카드' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: '추가 카드' }).click();
+  await expect(page.locator('#readingCards')).toBeHidden();
   await expect(page.locator('#extraReadings')).toBeVisible();
   await expect(page.locator('#extraReadings .reading-card-copy .result-label')).toHaveText('추가 1');
-  await page.locator('#extraClose').click();
+  await page.locator('#readingDetailsClose').click();
   const extraCardName = await page.locator('#extraReadings .reading-card-art .result-name').textContent();
 
   await page.getByRole('button', { name: '결과 공유' }).click();

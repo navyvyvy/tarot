@@ -29,7 +29,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon-192.svg">
   <link rel="apple-touch-icon" href="icon-192.svg">
-  <link rel="stylesheet" href="css/style.css?v=59">
+  <link rel="stylesheet" href="css/style.css?v=62">
 </head>
 <body>
   <canvas id="cvs" aria-hidden="true"></canvas>
@@ -68,6 +68,10 @@
             </button>
           </div>
         </section>
+        <div class="offline-tool" id="offlineTool" hidden>
+          <button class="back-btn offline-save" id="offlineSave" type="button" aria-describedby="offlineStatus">오프라인으로 저장</button>
+          <p class="offline-status" id="offlineStatus" aria-live="polite">카드 78장을 이 기기에 저장해 둘 수 있어요.</p>
+        </div>
       </section>
 
       <section class="step" id="s1" aria-labelledby="s1title" hidden>
@@ -124,7 +128,7 @@
           <header class="reading-heading"><div class="result-meta-copy"><p class="result-topic" id="s4topic"></p><div class="result-spread-meta"><h2 id="s4title" tabindex="-1"></h2><details class="result-info" id="resultInfo"><summary aria-label="스프레드 설명 보기"><span aria-hidden="true">?</span></summary><div class="result-info-panel"><strong>스프레드 설명</strong><p class="result-desc" id="s4desc"></p></div></details></div></div><div class="result-nav"><button class="btn-more" id="btnMore" type="button">추가 카드</button><div class="result-nav-secondary"><button class="back-btn" id="bk4" type="button">다시 선택</button></div></div></header>
           <section class="reading-spread" aria-labelledby="readingSpreadTitle"><h3 class="sr-only" id="readingSpreadTitle">선택한 카드</h3><div id="s4grid"></div><section class="result-extras" id="resultExtras" aria-labelledby="resultExtrasTitle" hidden><h3 id="resultExtrasTitle">추가 카드</h3><div class="result-extra-grid" id="s4extraGrid"></div></section></section>
           <section class="reading-overview" aria-labelledby="readingOverviewTitle"><div class="reading-overview-head"><h3 id="readingOverviewTitle">종합 평가</h3><span id="readingOverviewTopic"></span><div class="overview-switch" id="overviewSwitch" aria-label="종합 평가 범위" hidden><button type="button" data-overview="main" aria-pressed="true">처음 결과</button><button type="button" data-overview="all" aria-pressed="false">추가 카드 포함</button></div></div><p id="readingOverview"></p></section>
-          <div class="reading-disclosures" id="readingDisclosures"><button class="reading-detail-trigger" id="openReadingDetails" type="button"><span>카드별 해석</span><small>모아 보기</small></button><button class="reading-detail-trigger" id="openExtraDetails" type="button" hidden><span>추가 카드별 해석</span><small>모아 보기</small></button></div>
+          <div class="reading-disclosures"><button class="reading-detail-trigger" id="openReadingDetails" type="button"><span>카드별 해석</span><small>모아 보기</small></button></div>
         </article>
         <div class="reading-actions"><button class="btn-share" id="shareReading" type="button">결과 공유</button><button class="btn-reset" id="rst4" type="button">처음으로</button></div>
       </section>
@@ -162,17 +166,16 @@
 
   <dialog class="img-zoom-bg" id="imgZoom" aria-label="카드 이미지 확대"><button class="img-zoom-close" id="imgZoomClose" type="button" aria-label="확대 이미지 닫기">닫기</button><div class="img-zoom-wrap" id="imgZoomWrap"></div></dialog>
   <dialog class="mbg" id="mbg" aria-labelledby="mName"><div class="msh"><div class="m-grip" aria-hidden="true"></div><div class="m-top"><div class="m-imgbox" id="mImgBox"></div><div class="m-meta"><div class="m-arc" id="mArc"></div><h2 class="m-nm" id="mName"></h2><div id="mRevTag"></div><div class="m-kws" id="mKws"></div></div></div><div class="m-body" id="mBody"></div></div><button class="m-close" id="mClose" type="button" autofocus>닫기</button></dialog>
-  <dialog class="reading-dialog" id="readingDetails" aria-labelledby="readingDetailsTitle"><div class="reading-dialog-shell"><header class="reading-dialog-head"><div><p id="readingDetailsMeta"></p><h2 id="readingDetailsTitle">카드별 해석</h2></div><button class="reading-dialog-close" id="readingDetailsClose" type="button">닫기</button></header><div class="reading-dialog-body"><div class="reading-cards" id="readingCards"></div></div></div></dialog>
-  <dialog class="reading-dialog" id="extra" aria-labelledby="extraTitle"><div class="reading-dialog-shell"><header class="reading-dialog-head"><div><p id="extraDetailsMeta"></p><h2 id="extraTitle">추가 카드의 카드별 해석</h2></div><button class="reading-dialog-close" id="extraClose" type="button">닫기</button></header><div class="reading-dialog-body"><div class="reading-cards" id="extraReadings"></div></div></div></dialog>
+  <dialog class="reading-dialog" id="readingDetails" aria-labelledby="readingDetailsTitle"><div class="reading-dialog-shell"><header class="reading-dialog-head"><div><p id="readingDetailsMeta"></p><h2 id="readingDetailsTitle">카드별 해석</h2></div><button class="reading-dialog-close" id="readingDetailsClose" type="button">닫기</button></header><div class="reading-dialog-body"><div class="reading-dialog-tabs" id="readingDetailTabs" role="tablist" aria-label="카드별 해석 구분" hidden><button class="is-active" id="readingMainTab" type="button" role="tab" aria-selected="true" aria-controls="readingMainPanel" data-reading-tab="main">선택한 카드</button><button id="readingExtraTab" type="button" role="tab" aria-selected="false" aria-controls="readingExtraPanel" data-reading-tab="extra" tabindex="-1">추가 카드</button></div><section class="reading-tab-panel is-active" id="readingMainPanel" role="tabpanel" aria-labelledby="readingMainTab"><div class="reading-cards" id="readingCards"></div></section><section class="reading-tab-panel" id="readingExtraPanel" role="tabpanel" aria-labelledby="readingExtraTab" hidden><div class="reading-cards" id="extraReadings"></div></section></div></div></dialog>
   <dialog class="share-dialog" id="shareDialog" aria-labelledby="shareDialogTitle"><div class="share-dialog-shell"><header class="share-dialog-head"><div><a class="share-dialog-brand" id="shareDialogBrand" href="./" hidden>NORU</a><p id="shareDialogMeta"></p><h2 id="shareDialogTitle" tabindex="-1">공유할 결과 확인</h2></div><button class="share-dialog-close" id="shareDialogClose" type="button" aria-label="공유 창 닫기">닫기</button></header><div class="share-dialog-body"><div class="share-preview-spread"><section aria-labelledby="shareCardsTitle"><h3 class="sr-only" id="shareCardsTitle">선택한 카드</h3><div class="share-preview-cards" id="sharePreviewCards"></div></section><section class="share-preview-extra" id="sharePreviewExtra" aria-labelledby="shareExtraTitle"><h3 id="shareExtraTitle">추가 카드</h3><div class="share-preview-cards" id="sharePreviewExtraCards"></div></section></div><section class="share-preview-overview" aria-labelledby="shareOverviewTitle"><div class="share-preview-overview-head"><h3 id="shareOverviewTitle">종합 평가</h3><div class="overview-switch" id="shareOverviewSwitch" aria-label="공유할 종합 평가" hidden><button type="button" data-share-overview="main" aria-pressed="true">처음 결과</button><button type="button" data-share-overview="all" aria-pressed="false">추가 카드 포함</button></div></div><p id="sharePreviewOverview"></p></section></div><div class="share-dialog-actions"><button class="btn-save-image" id="saveReadingImage" type="button">이미지 저장</button><button class="btn-share" id="confirmShare" type="button">공유하기</button><a class="btn-new-reading" id="startNewReading" href="./?mode=tarot" hidden>내 타로 보기</a></div></div></dialog>
   <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
 
   <script src="card.js?v=58"></script>
 <script src="locale/ko.js?v=58"></script>
   <script src="core.js?v=58"></script>
-<script src="app.js?v=58"></script>
+<script src="app.js?v=62"></script>
   <script src="detail.js?v=58"></script>
   <script src="dictionary.js?v=58"></script>
-  <script src="summary.js?v=58"></script>
+  <script src="summary.js?v=62"></script>
 </body>
 </html>

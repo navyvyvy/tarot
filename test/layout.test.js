@@ -98,7 +98,10 @@ test('topic presets and shared result use one readable result sheet', function()
   assert.match(index, /<details class="result-info"/);
   assert.match(index, /<dialog class="reading-dialog" id="readingDetails"/);
   assert.match(index, /id="openReadingDetails"/);
-  assert.match(index, /id="openExtraDetails"/);
+  assert.match(index, /id="readingDetailTabs"[^>]+role="tablist"/);
+  assert.match(index, /id="readingMainTab"[^>]+role="tab"/);
+  assert.match(index, /id="readingExtraTab"[^>]+role="tab"/);
+  assert.doesNotMatch(index, /id="openExtraDetails"|id="extra"/);
   assert.match(index, /id="shareDialog"/);
   assert.match(index, /id="startNewReading"[^>]+href="\.\/\?mode=tarot"/);
   assert.match(index, /class="share-dialog-actions"><button class="btn-save-image" id="saveReadingImage"/);
@@ -172,7 +175,8 @@ test('result cards reveal in sequence and keep their metadata hierarchy', functi
   assert.match(css, /\.reading-card-copy \.result-badges\s*\{[^}]*align-items:\s*flex-start/);
   assert.match(css, /\.result-info summary span\s*\{[^}]*width:\s*17px[^}]*height:\s*17px/);
   assert.match(index, /id="overviewSwitch"[^>]*hidden/);
-  assert.match(index, /추가 카드의 카드별 해석/);
+  assert.match(index, /data-reading-tab="main">선택한 카드/);
+  assert.match(index, /data-reading-tab="extra"[^>]*>추가 카드/);
   assert.match(summary, /extraOverview/);
   assert.match(index, /id="shareOverviewSwitch"/);
   assert.match(summary, /data-share-overview/);

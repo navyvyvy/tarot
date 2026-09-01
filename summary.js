@@ -5,7 +5,7 @@
   var shareDialog=document.getElementById('shareDialog');
   var confirmShareButton=document.getElementById('confirmShare');
   var readingDialog=document.getElementById('readingDetails');
-  var extraDialog=document.getElementById('extra');
+  var readingTabs=document.getElementById('readingDetailTabs');
   var overviewSwitch=document.getElementById('overviewSwitch');
   var shareOverviewSwitch=document.getElementById('shareOverviewSwitch');
   var currentSummary=null;
@@ -63,6 +63,16 @@
     return cardName(entry.card)+' '+(entry.card.isRev?'역방향':'정방향');
   }
 
+  function meaningArc(entries){
+    var anchors=entries.length<=3
+      ?entries
+      :[entries[0],entries[Math.floor(entries.length/2)],entries[entries.length-1]];
+    return anchors.map(function(entry,index){
+      var lead=index===0?'':index===anchors.length-1?'마지막으로 ':'이어서 ';
+      return lead+entry.position+' 자리에서는 '+firstSentence(cardMeaning(entry));
+    }).join(' ');
+  }
+
   function legacyOverviewText(summary,withExtras){
     var first=summary.entries[0];
     var last=summary.entries[summary.entries.length-1];
@@ -85,7 +95,7 @@
     var labels=entries.map(function(entry){return entry.position+'의 '+entryLabel(entry);});
     var flow='';
     if(entries.length===3){
-      flow='과거의 '+entryLabel(entries[0])+'에서 현재의 '+entryLabel(entries[1])+', 미래의 '+entryLabel(entries[2])+'로 흐름이 이어집니다.';
+      flow='과거에는 '+entryLabel(entries[0])+'이, 현재에는 '+entryLabel(entries[1])+'이, 미래에는 '+entryLabel(entries[2])+'이 놓였습니다.';
     }else if(entries.length===5){
       flow='현재의 '+entryLabel(entries[0])+'을 중심으로, 목표에는 '+entryLabel(entries[1])+', 근원에는 '+entryLabel(entries[2])+', 과거의 영향에는 '+entryLabel(entries[3])+', 예상 결과에는 '+entryLabel(entries[4])+'이 놓였습니다.';
     }else if(entries.length===7){
@@ -95,8 +105,7 @@
     }else{
       flow=labels.join(', ')+' 순서로 이어집니다.';
     }
-    var last=entries[entries.length-1];
-    return flow+' '+last.position+'에서는 '+firstSentence(cardMeaning(last))+(summary.pattern?' '+summary.pattern:'');
+    return flow+' '+meaningArc(entries)+(summary.pattern?' '+summary.pattern:'');
   }
 
   function extraOverviewText(main,summary){
@@ -104,7 +113,8 @@
     var labels=extras.slice(0,4).map(entryLabel).join(', ');
     var remainder=extras.length>4?' 외 '+(extras.length-4)+'장':'';
     var pattern=summary.pattern&&summary.pattern!==main.pattern?' '+summary.pattern:'';
-    return overviewText(main)+' 추가 카드로 '+labels+remainder+'이 더해졌습니다.'+pattern;
+    var anchors=extras.length===1?extras:[extras[0],extras[extras.length-1]];
+    return overviewText(main)+' 추가 카드로 '+labels+remainder+'이 더해졌습니다. '+meaningArc(anchors)+pattern;
   }
 
   function buildSummary(){
@@ -137,6 +147,19 @@
     });
   }
 
+  function selectReadingTab(name,focus){
+    var active=name==='extra'&&!readingTabs.hidden?'extra':'main';
+    readingTabs.querySelectorAll('[data-reading-tab]').forEach(function(tab){
+      var selected=tab.dataset.readingTab===active;
+      tab.classList.toggle('is-active',selected);
+      tab.setAttribute('aria-selected',String(selected));
+      tab.tabIndex=selected?0:-1;
+      document.getElementById(tab.getAttribute('aria-controls')).hidden=!selected;
+      document.getElementById(tab.getAttribute('aria-controls')).classList.toggle('is-active',selected);
+      if(selected&&focus)tab.focus();
+    });
+  }
+
   function cardMarkup(entry,index){
     var name=cardName(entry.card);
     var position=entry.position.indexOf('추가 카드')===0?entry.position.replace('추가 카드','추가'):(index+1)+'. '+entry.position;
@@ -155,15 +178,12 @@
     var cards=document.getElementById('readingCards');
     cards.className='reading-cards'+(currentSummary.mainEntries.length>3?' is-many':'');
     cards.innerHTML=currentSummary.mainEntries.map(cardMarkup).join('');
-    var extra=document.getElementById('extra');
     var extraCards=document.getElementById('extraReadings');
     extraCards.className='reading-cards'+(currentSummary.extraEntries.length>3?' is-many':'');
     extraCards.innerHTML=currentSummary.extraEntries.map(cardMarkup).join('');
     document.getElementById('readingDetailsMeta').textContent=currentSummary.topicInfo.label+' / '+currentSummary.spread.title;
-    document.getElementById('extraDetailsMeta').textContent=currentSummary.topicInfo.label+' / '+currentSummary.spread.title;
-    document.getElementById('openExtraDetails').hidden=!currentSummary.extraEntries.length;
-    if(extra.open&&!currentSummary.extraEntries.length)extra.close();
-    document.getElementById('readingDisclosures').classList.toggle('has-extra',currentSummary.extraEntries.length>0);
+    readingTabs.hidden=!currentSummary.extraEntries.length;
+    if(!currentSummary.extraEntries.length||!previousExtraCount)selectReadingTab('main');
   }
 
   function readingOverview(){
@@ -410,7 +430,14 @@
   document.getElementById('shareDialogClose').addEventListener('click',closeShareDialog);
   shareDialog.addEventListener('click',function(event){if(event.target===shareDialog)closeShareDialog();});
   document.getElementById('openReadingDetails').addEventListener('click',function(){openReadingDialog(readingDialog);});
-  document.getElementById('openExtraDetails').addEventListener('click',function(){openReadingDialog(extraDialog);});
+  readingTabs.querySelectorAll('[data-reading-tab]').forEach(function(tab,index,tabs){
+    tab.addEventListener('click',function(){selectReadingTab(tab.dataset.readingTab);});
+    tab.addEventListener('keydown',function(event){
+      if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
+      event.preventDefault();
+      selectReadingTab(tabs[(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length].dataset.readingTab,true);
+    });
+  });
   overviewSwitch.querySelectorAll('[data-overview]').forEach(function(button){
     button.addEventListener('click',function(){overviewMode=button.dataset.overview;renderOverview();});
   });
@@ -418,9 +445,7 @@
     button.addEventListener('click',function(){overviewMode=button.dataset.shareOverview;renderOverview();renderSharePreview();});
   });
   document.getElementById('readingDetailsClose').addEventListener('click',function(){closeReadingDialog(readingDialog);});
-  document.getElementById('extraClose').addEventListener('click',function(){closeReadingDialog(extraDialog);});
   readingDialog.addEventListener('click',function(event){if(event.target===readingDialog)closeReadingDialog(readingDialog);});
-  extraDialog.addEventListener('click',function(event){if(event.target===extraDialog)closeReadingDialog(extraDialog);});
   saveButton.addEventListener('click',saveReadingImage);
   window.addEventListener('DOMContentLoaded',restoreSharedReading);
 })();

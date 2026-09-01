@@ -1,20 +1,20 @@
 importScripts('./card.js');
 
 const APP_CACHE_PREFIX = 'noru-app-';
-const CACHE_NAME = 'noru-app-v59';
+const CACHE_NAME = 'noru-app-v62';
 const CARD_CACHE_NAME = 'noru-cards-v1';
 const CARD_ASSETS = Object.values(self.CARD_CONFIG).map(function(filename) { return './assets/' + filename; });
 const APP_SHELL = [
   './',
   './index.html',
-  './css/style.css?v=59',
+  './css/style.css?v=62',
   './core.js?v=58',
   './card.js?v=58',
   './locale/ko.js?v=58',
-  './app.js?v=58',
+  './app.js?v=62',
   './detail.js?v=58',
   './dictionary.js?v=58',
-  './summary.js?v=58',
+  './summary.js?v=62',
   './manifest.json',
   './icon-192.svg',
   './icon-512.svg'
@@ -43,13 +43,23 @@ self.addEventListener('activate', function(event) {
 
 self.addEventListener('message', function(event) {
   if (!event.data || event.data.type !== 'CACHE_ALL_CARDS') return;
-  event.waitUntil(
-    caches.open(CARD_CACHE_NAME).then(function(cache) {
+  var port=event.ports&&event.ports[0];
+  var caching=caches.open(CARD_CACHE_NAME).then(function(cache) {
       return Promise.all(CARD_ASSETS.map(function(url) {
-        return cache.match(url).then(function(cached) { return cached || cache.add(url); }).catch(function() { return false; });
+        return cache.match(url).then(function(cached) {
+          if(cached)return true;
+          return cache.add(url).then(function(){return true;});
+        }).catch(function() { return false; });
       }));
-    })
-  );
+    }).then(function(results){
+      var cached=results.filter(Boolean).length;
+      return {type:'CACHE_ALL_CARDS_RESULT',total:CARD_ASSETS.length,cached:cached,failed:CARD_ASSETS.length-cached};
+    }).catch(function(){
+      return {type:'CACHE_ALL_CARDS_RESULT',total:CARD_ASSETS.length,cached:0,failed:CARD_ASSETS.length};
+    }).then(function(result){
+      if(port)port.postMessage(result);
+    });
+  event.waitUntil(caching);
 });
 
 self.addEventListener('fetch', function(event) {

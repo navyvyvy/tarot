@@ -400,8 +400,8 @@ function resetAll(){
   document.getElementById('readingOverview').textContent='';
   document.getElementById('readingCards').innerHTML='';
   document.getElementById('extraReadings').innerHTML='';
-  document.getElementById('openExtraDetails').hidden=true;
-  ['readingDetails','extra'].forEach(function(id){var dialog=document.getElementById(id);if(dialog.open)dialog.close();});
+  document.getElementById('readingDetailTabs').hidden=true;
+  var readingDialog=document.getElementById('readingDetails');if(readingDialog.open)readingDialog.close();
   document.getElementById('btnRev').className='btn-rev';
   if(window.LOCALE) document.getElementById('btnRev').textContent=window.LOCALE.ui.revealBtn;
   if(window.LOCALE) document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
@@ -432,7 +432,7 @@ function doShuffle(){
       document.getElementById('s4grid').innerHTML='';
       document.getElementById('readingCards').innerHTML='';
       document.getElementById('extraReadings').innerHTML='';
-      document.getElementById('openExtraDetails').hidden=true;
+      document.getElementById('readingDetailTabs').hidden=true;
       buildTrack();show('s3');
     } catch(e){
       logger.error('셔플 오류:',e);
@@ -573,7 +573,7 @@ document.getElementById('btnRev').addEventListener('click',function(){
     S.adding=false;S.selected=[];
     renderResultCards();
     renderReadingOverview();
-    ['readingDetails','extra'].forEach(function(id){var dialog=document.getElementById(id);if(dialog.open)dialog.close();});
+    var readingDialog=document.getElementById('readingDetails');if(readingDialog.open)readingDialog.close();
     document.getElementById('hint').innerHTML=window.LOCALE.ui.hint;
     document.getElementById('btnRev').textContent='선택한 카드 펼치기';
     show('s4');refreshMore();
@@ -610,7 +610,7 @@ function renderResultScreen(shared){
   document.getElementById('s4title').textContent=sp.title;
   document.getElementById('s4desc').textContent=sp.desc;
   document.getElementById('resultInfo').open=false;
-  ['readingDetails','extra'].forEach(function(id){var dialog=document.getElementById(id);if(dialog.open)dialog.close();});
+  var readingDialog=document.getElementById('readingDetails');if(readingDialog.open)readingDialog.close();
   renderResultCards();
   renderReadingOverview();
   document.getElementById('s4').classList.toggle('is-shared',!!shared);
@@ -752,7 +752,8 @@ document.getElementById('btnMore').addEventListener('click',function(){
   var dSel=document.getElementById('bDay');
   ySel.innerHTML='<option value="">연도</option>';
   var thisYear=new Date().getFullYear();
-  for(var y=thisYear;y>=1924;y--){
+  var oldestYear=thisYear-120;
+  for(var y=thisYear;y>=oldestYear;y--){
     var op=document.createElement('option');op.value=y;op.textContent=y+'년';ySel.appendChild(op);
   }
   function updateDays(){
@@ -910,15 +911,64 @@ window.addEventListener('DOMContentLoaded', initializeData);
 
 /* Service Worker 등록 */
 if('serviceWorker' in navigator){
-  function cacheInstalledCards(registration){
+  var offlineTool=document.getElementById('offlineTool');
+  var offlineSave=document.getElementById('offlineSave');
+  var offlineStatus=document.getElementById('offlineStatus');
+
+  function cacheInstalledCards(registration,manual){
     var connection=navigator.connection;
-    if(connection&&connection.saveData)return;
-    if(registration.active)registration.active.postMessage({type:'CACHE_ALL_CARDS'});
+    if(!manual&&connection&&connection.saveData)return Promise.resolve(null);
+    if(!registration.active)return Promise.reject(new Error('활성 서비스 워커가 없습니다.'));
+    if(!manual){
+      registration.active.postMessage({type:'CACHE_ALL_CARDS'});
+      return Promise.resolve(null);
+    }
+    return new Promise(function(resolve,reject){
+      var channel=new MessageChannel();
+      channel.port1.onmessage=function(event){channel.port1.close();resolve(event.data);};
+      channel.port1.onmessageerror=function(){reject(new Error('오프라인 저장 결과를 받지 못했습니다.'));};
+      registration.active.postMessage({type:'CACHE_ALL_CARDS'},[channel.port2]);
+    });
   }
+
+  function saveCardsOffline(){
+    offlineSave.disabled=true;
+    offlineSave.classList.remove('is-complete');
+    offlineSave.setAttribute('aria-busy','true');
+    offlineSave.textContent='저장 중…';
+    offlineStatus.textContent='카드 이미지를 저장하고 있어요.';
+    navigator.serviceWorker.ready
+      .then(function(registration){return cacheInstalledCards(registration,true);})
+      .then(function(result){
+        if(!result||result.type!=='CACHE_ALL_CARDS_RESULT')throw new Error('잘못된 오프라인 저장 결과입니다.');
+        if(result.failed===0){
+          offlineSave.classList.add('is-complete');
+          offlineSave.textContent='저장 완료';
+          offlineStatus.textContent=result.cached+'장 저장 완료';
+        }else{
+          offlineSave.textContent='다시 저장';
+          offlineStatus.textContent=result.failed+'장을 저장하지 못했어요. 연결을 확인하고 다시 눌러 주세요.';
+        }
+      })
+      .catch(function(err){
+        logger.error('카드 오프라인 저장 실패:',err);
+        offlineSave.textContent='다시 저장';
+        offlineStatus.textContent='저장을 마치지 못했어요.';
+        showToast('오프라인 저장을 마치지 못했습니다.');
+      })
+      .finally(function(){
+        offlineSave.disabled=false;
+        offlineSave.removeAttribute('aria-busy');
+      });
+  }
+  offlineSave.addEventListener('click',saveCardsOffline);
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('./sw.js')
       .then(function(registration){
-        if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone)cacheInstalledCards(registration);
+        offlineTool.hidden=false;
+        if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone){
+          navigator.serviceWorker.ready.then(function(readyRegistration){return cacheInstalledCards(readyRegistration,false);});
+        }
       })
       .catch(function(err){
         logger.error('SW 등록 실패:', err);
@@ -926,6 +976,6 @@ if('serviceWorker' in navigator){
       });
   });
   window.addEventListener('appinstalled',function(){
-    navigator.serviceWorker.ready.then(cacheInstalledCards);
+    navigator.serviceWorker.ready.then(function(registration){return cacheInstalledCards(registration,false);});
   });
 }
