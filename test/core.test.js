@@ -105,6 +105,15 @@ test('deck catalog keeps card lookup and pool selection behind one interface', f
   assert.deepEqual(deck.cards('major').map(function(card) { return card.id; }), [0]);
   assert.deepEqual(deck.cards('minor').map(function(card) { return card.id; }), [22]);
   assert.equal(deck.image(deck.card(22)), './assets/Wands01.webp');
+
+  const secondDeck = deckCatalog.register({
+    id: 'test-deck',
+    name: 'Test Deck',
+    images: { major_0: 'test.webp' },
+    cards: [{ id: 0, type: 'major', name: 'Test Card' }]
+  });
+  assert.equal(secondDeck.card(0).name, 'Test Card');
+  assert.equal(secondDeck.image(secondDeck.card(0)), './assets/test.webp');
 });
 
 test('service worker shell references real project files', function() {

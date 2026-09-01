@@ -11,14 +11,10 @@
   var currentSummary=null;
   var overviewMode='main';
 
-  function suitByCode(code){
-    return (window.LOCALE.suits||[]).find(function(suit){return suit.code===code;});
-  }
-
   function patternText(summary){
     if(S.pool==='major'||!summary.dominantSuit)return '';
-    var suit=suitByCode(summary.dominantSuit);
-    return suit?suit.n+' 카드가 가장 많이 나왔습니다. '+suit.guide:'';
+    var card=activeDeck().cards('minor').find(function(item){return item.suitCode===summary.dominantSuit;});
+    return card?card.suitName+' 카드가 가장 많이 나왔습니다. '+card.suitGuide:'';
   }
 
   function moneyContext(card){
@@ -33,15 +29,14 @@
 
   function cardMeaning(entry){
     var card=entry.card;
-    var suit=suitByCode(card.suitCode);
     if(S.topic==='love'){
       return card.isRev
-        ? card.rv+' '+(suit?suit.reverseLove:window.LOCALE.ui.modalMajorReverseLove)
+        ? card.rv+' '+(card.reverseLove||window.LOCALE.ui.modalMajorReverseLove)
         : card.up+' '+card.lv;
     }
     if(S.topic==='career'){
       return card.isRev
-        ? card.rv+' '+(suit?suit.reverseCareer:window.LOCALE.ui.modalMajorReverseCareer)
+        ? card.rv+' '+(card.reverseCareer||window.LOCALE.ui.modalMajorReverseCareer)
         : card.up+' '+card.ca;
     }
     if(S.topic==='money')return (card.isRev?card.rv:card.up)+' 금전 흐름에서는 '+moneyContext(card);
@@ -396,10 +391,10 @@
     if(!token)return;
     var shared=window.NORU.core.decodeReading(token);
     if(!shared){showToast('공유 결과 링크가 올바르지 않습니다.');return;}
-    var byId={};
-    window.LOCALE.allCards.forEach(function(card){byId[card.id]=card;});
+    var deck=window.NORU.deckCatalog.get('rws');
     var revealed=shared.cards.map(function(value){
-      return byId[value.id]?Object.assign({},byId[value.id],{isRev:value.isRev}):null;
+      var card=deck.card(value.id);
+      return card?Object.assign({},card,{isRev:value.isRev}):null;
     });
     if(revealed.some(function(card){return !card;})){showToast('공유 결과를 불러오지 못했습니다.');return;}
     Object.assign(S,{mode:'tarot',topic:shared.topic,deckId:'rws',pool:shared.deck,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false,readingVersion:shared.version});

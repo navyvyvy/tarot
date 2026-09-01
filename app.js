@@ -11,13 +11,15 @@
   document.addEventListener('visibilitychange',function(){if(!document.hidden&&!running)drw();});
 })();
 
-function cardImgUrl(card) {
-  const key = card.type === 'major'
-    ? `major_${card.id}`
-    : `minor_${card.suitCode}_${card.numCode}`;
+function activeDeck() {
+  var deckId=window.NORU.state&&window.NORU.state.deckId||'rws';
+  var deck=window.NORU.deckCatalog.get(deckId);
+  if(!deck)throw new Error('등록되지 않은 카드 덱입니다: '+deckId);
+  return deck;
+}
 
-  const filename = window.CARD_CONFIG[key] || 'default.webp';
-  return `./assets/${filename}`;
+function cardImgUrl(card) {
+  return activeDeck().image(card);
 }
 
 /* Card back — ornate crescent moon design */
@@ -210,26 +212,14 @@ var logger = {
 };
 
 function cardName(card){
-  if(!window.LOCALE) return '';
-  if(card.type==='major'){
-    var maj=window.LOCALE.major[card.id];
-    return maj?maj.name:'';
-  }
-  var suit=window.LOCALE.suits.find(function(s){return s.code===card.suitCode;});
-  var num=window.LOCALE.numbers.find(function(n){return n.code===card.numCode;});
-  if(!suit||!num) return '';
-  var fmt=window.LOCALE.ui.minorNameFmt||'{suit}의 {num}';
-  return fmt.replace('{suit}',suit.n).replace('{num}',num.label);
+  var full=activeDeck().card(card.id)||card;
+  return full.name||'';
 }
 
 var S=window.NORU.state={mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2};
 
 function poolCards(){
-  return S.pool==='major'
-    ? window.LOCALE.major
-    : S.pool==='minor'
-      ? window.LOCALE.minorDataArray||[]
-      : window.LOCALE.allCards||[];
+  return activeDeck().cards(S.pool);
 }
 
 function reshuffle(cards){
@@ -801,8 +791,8 @@ document.getElementById('calcBtn').addEventListener('click',function(){
 function renderBirth(bp){
   var res=document.getElementById('birthRes');
   try{
-    var MAJ=window.LOCALE.major;
-    var cards=bp.c.map(function(id){return MAJ[id];}).filter(Boolean);
+    var deck=activeDeck();
+    var cards=bp.c.map(function(id){return deck.card(id);}).filter(Boolean);
     if(!cards.length) throw new Error('카드 데이터를 찾을 수 없습니다.');
 
     var H='';
@@ -849,7 +839,18 @@ function initializeData(){
     showToast('카드 데이터를 불러오지 못했습니다. 페이지를 새로고침해 주세요.');
     return;
   }
-  var MAJ=window.LOCALE.major;
+  var symbolism=window.LOCALE.symbolism||{};
+  var notes=(window.LOCALE.readingNotes||{}).major||[];
+  var MAJ=window.LOCALE.major.map(function(card){
+    var note=notes[card.id]||{};
+    return Object.assign({},card,{
+      symbolism:(symbolism.major||[])[card.id]||'',
+      readingKey:note.focus||'',
+      reflection:note.question||'',
+      reverseLove:window.LOCALE.ui.modalMajorReverseLove,
+      reverseCareer:window.LOCALE.ui.modalMajorReverseCareer
+    });
+  });
   var SDS=window.LOCALE.suits;
   var NK=window.LOCALE.numbers;
   var MINOR_DATA=window.LOCALE.minorData;
@@ -867,14 +868,23 @@ function initializeData(){
           ca:(fb.ca||'').replace('{theme}',s.t)
         };
         var kws=(window.LOCALE.minorKeywords||{})[key]||[s.e,s.n,num.label];
-        c.push({id:id++,type:'minor',suitCode:s.code,numCode:num.code,keywords:kws,up:d.up,rv:d.rv,lv:d.lv,ca:d.ca});
+        var fmt=window.LOCALE.ui.minorNameFmt||'{suit}의 {num}';
+        c.push({
+          id:id++,type:'minor',suitCode:s.code,numCode:num.code,
+          name:fmt.replace('{suit}',s.n).replace('{num}',num.label),suitName:s.n,
+          suitGuide:s.guide,
+          keywords:kws,up:d.up,rv:d.rv,lv:d.lv,ca:d.ca,
+          symbolism:(symbolism.minor||{})[key]||'',
+          readingKey:s.guide+' '+num.label+' 단계는 '+num.meaning+'을 뜻합니다.',
+          reflection:num.question.replace('{theme}',s.t),
+          reverseLove:s.reverseLove,reverseCareer:s.reverseCareer
+        });
       });
     });
     return c;
   }
 
-  window.LOCALE.minorDataArray = buildMinor();
-  window.LOCALE.allCards = MAJ.concat(window.LOCALE.minorDataArray);
+  activeDeck().setCards(MAJ.concat(buildMinor()));
 
   renderSpInfo();
   applyLocale();

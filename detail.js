@@ -1,8 +1,7 @@
 /* ── CARD DETAIL ── */
 function openModal(card) {
   try {
-    const ALL=window.LOCALE.allCards||[];
-    const full = ALL.find(c => c.id === card.id) || card;
+    const full = activeDeck().card(card.id) || card;
     const box = document.getElementById('mImgBox');
 
     box.innerHTML = `
@@ -13,24 +12,14 @@ function openModal(card) {
     wrap.addEventListener('click', (e) => { e.stopPropagation(); openImgZoom(card); });
 
     const L = window.LOCALE.ui;
-    const symbolismData = window.LOCALE.symbolism || {};
-    const symbolism = full.type === 'major'
-      ? (symbolismData.major || [])[full.id]
-      : (symbolismData.minor || {})[`${full.suitCode}.${full.numCode}`];
-    const suitObj = window.LOCALE.suits ? window.LOCALE.suits.find(s => s.code === full.suitCode) : null;
-    const numberObj = window.LOCALE.numbers ? window.LOCALE.numbers.find(n => n.code === full.numCode) : null;
-    const majorNote = full.type === 'major' ? ((window.LOCALE.readingNotes || {}).major || [])[full.id] : null;
-    const readingKey = majorNote
-      ? majorNote.focus
-      : `${suitObj.guide} ${numberObj.label} 단계는 ${numberObj.meaning}을 뜻합니다.`;
-    const reflection = majorNote
-      ? majorNote.question
-      : numberObj.question.replace('{theme}', suitObj.t);
-    const reverseLove = suitObj ? suitObj.reverseLove : L.modalMajorReverseLove;
-    const reverseCareer = suitObj ? suitObj.reverseCareer : L.modalMajorReverseCareer;
+    const symbolism = full.symbolism;
+    const readingKey = full.readingKey;
+    const reflection = full.reflection;
+    const reverseLove = full.reverseLove || L.modalMajorReverseLove;
+    const reverseCareer = full.reverseCareer || L.modalMajorReverseCareer;
     document.getElementById('mArc').textContent = (full.type === 'major' || !full.suitCode)
       ? `${L.modalArcMajor} · ${L.majorNumPrefix || 'No.'}${full.number}`
-      : `${L.modalArcMinor} · ${suitObj ? suitObj.n : ''}`;
+      : `${L.modalArcMinor} · ${full.suitName || ''}`;
     document.getElementById('mName').textContent = cardName(full);
     document.getElementById('mRevTag').innerHTML = card.isRev ? `<span class="m-rev">${L.modalReversed}</span>` : '';
     document.getElementById('mKws').innerHTML = full.keywords.map(k => `<span class="modal-kw">${k}</span>`).join('');

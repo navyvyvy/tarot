@@ -36,6 +36,7 @@
   function register(definition) {
     if (!definition || !definition.id || decks[definition.id]) return null;
     decks[definition.id] = createDeck(definition);
+    if (definition.cards) decks[definition.id].setCards(definition.cards);
     return decks[definition.id];
   }
 

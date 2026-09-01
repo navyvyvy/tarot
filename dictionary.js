@@ -5,8 +5,7 @@
 
   function suitName(card){
     if(card.type==='major')return '메이저 아르카나';
-    var suit=window.LOCALE.suits.find(function(item){return item.code===card.suitCode;});
-    return suit?suit.n:'';
+    return card.suitName||'';
   }
 
   function groupKey(card){return card.type==='major'?'major':card.suitCode;}
@@ -22,7 +21,7 @@
 
   function renderDictionary(){
     try{
-      var cards=(window.LOCALE.allCards||[]).filter(matches);
+      var cards=activeDeck().cards('all').filter(matches);
       var grid=document.getElementById('dictionaryGrid');
       var empty=document.getElementById('dictionaryEmpty');
       var fragment=document.createDocumentFragment();
