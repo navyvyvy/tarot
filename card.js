@@ -1,7 +1,55 @@
 (function(root, factory) {
-  var config = factory();
-  root.CARD_CONFIG = config;
-  if (typeof module === 'object' && module.exports) module.exports = config;
+  var images = factory();
+  var decks = Object.create(null);
+
+  function cardKey(card) {
+    return card.type === 'major'
+      ? 'major_' + card.id
+      : 'minor_' + card.suitCode + '_' + card.numCode;
+  }
+
+  function createDeck(definition) {
+    var allCards = [];
+    return {
+      id: definition.id,
+      name: definition.name,
+      setCards: function(cards) {
+        allCards = cards.slice();
+      },
+      cards: function(pool) {
+        if (pool === 'major') return allCards.filter(function(card) { return card.type === 'major'; });
+        if (pool === 'minor') return allCards.filter(function(card) { return card.type === 'minor'; });
+        return allCards.slice();
+      },
+      card: function(id) {
+        return allCards.find(function(card) { return card.id === id; }) || null;
+      },
+      image: function(card) {
+        return './assets/' + (definition.images[cardKey(card)] || 'default.webp');
+      },
+      assets: function() {
+        return Object.values(definition.images).map(function(filename) { return './assets/' + filename; });
+      }
+    };
+  }
+
+  function register(definition) {
+    if (!definition || !definition.id || decks[definition.id]) return null;
+    decks[definition.id] = createDeck(definition);
+    return decks[definition.id];
+  }
+
+  var catalog = {
+    register: register,
+    get: function(id) { return decks[id] || null; },
+    list: function() { return Object.keys(decks).map(function(id) { return decks[id]; }); }
+  };
+
+  register({ id: 'rws', name: '유니버설 웨이트', images: images });
+  root.NORU = root.NORU || {};
+  root.NORU.deckCatalog = catalog;
+  root.CARD_CONFIG = images;
+  if (typeof module === 'object' && module.exports) module.exports = catalog;
 })(typeof self !== 'undefined' ? self : globalThis, function() {
   return {
     "major_0": "RWS_Tarot_00_Fool.webp",

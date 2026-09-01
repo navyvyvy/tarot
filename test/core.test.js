@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const core = require('../core.js');
-const cards = require('../card.js');
+const deckCatalog = require('../card.js');
 
 test('shuffleDeck shuffles copies without mutating the source', function() {
   const source = [{ id: 1 }, { id: 2 }, { id: 3 }];
@@ -89,12 +89,22 @@ test('shared reading tokens preserve the exact spread and reject invalid data', 
 });
 
 test('all 78 configured card images exist locally', function() {
-  const filenames = Object.values(cards);
-  assert.equal(filenames.length, 78);
-  assert.equal(new Set(filenames).size, 78);
-  filenames.forEach(function(filename) {
-    assert.ok(fs.existsSync(path.join(__dirname, '..', 'assets', filename)), filename);
+  const deck = deckCatalog.get('rws');
+  const assets = deck.assets();
+  assert.equal(assets.length, 78);
+  assert.equal(new Set(assets).size, 78);
+  assets.forEach(function(asset) {
+    assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), asset);
   });
+});
+
+test('deck catalog keeps card lookup and pool selection behind one interface', function() {
+  const deck = deckCatalog.get('rws');
+  deck.setCards([{ id: 0, type: 'major' }, { id: 22, type: 'minor', suitCode: 'wands', numCode: 'ace' }]);
+  assert.equal(deck.card(22).suitCode, 'wands');
+  assert.deepEqual(deck.cards('major').map(function(card) { return card.id; }), [0]);
+  assert.deepEqual(deck.cards('minor').map(function(card) { return card.id; }), [22]);
+  assert.equal(deck.image(deck.card(22)), './assets/Wands01.webp');
 });
 
 test('service worker shell references real project files', function() {
