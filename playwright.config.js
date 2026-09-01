@@ -18,7 +18,7 @@ module.exports = defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'], reducedMotion: 'reduce' } }
   ],
   webServer: {
-    command: 'py -m http.server 4174 --bind 127.0.0.1',
+    command: (process.platform === 'win32' ? 'py' : 'python3') + ' -m http.server 4174 --bind 127.0.0.1',
     url: 'http://127.0.0.1:4174',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000

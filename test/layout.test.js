@@ -189,3 +189,9 @@ test('navigation buttons share one hierarchy without decorative arrows', functio
   assert.match(css, /\.result-topic\s*\{[^}]*font:[^}]*1\.4rem/);
   assert.match(css, /\.reading-heading h2\s*\{[^}]*font:\s*700\s*\.76rem/);
 });
+
+test('browser test server starts on Windows and Linux', function() {
+  const config = fs.readFileSync(path.join(__dirname, '..', 'playwright.config.js'), 'utf8');
+  assert.match(config, /process\.platform === 'win32'/);
+  assert.match(config, /'py' : 'python3'/);
+});
