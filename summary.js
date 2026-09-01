@@ -179,6 +179,18 @@
     confirmShareButton.focus();
   }
 
+  function openSharedResultPage(){
+    renderSharePreview();
+    document.body.classList.add('shared-result-page');
+    shareDialog.classList.add('is-shared-page');
+    document.getElementById('shareDialogBrand').hidden=false;
+    document.getElementById('shareDialogClose').hidden=true;
+    document.getElementById('startNewReading').hidden=false;
+    confirmShareButton.hidden=true;
+    shareDialog.show();
+    document.getElementById('shareDialogTitle').focus();
+  }
+
   function closeShareDialog(){if(shareDialog.open)shareDialog.close();}
 
   function openReadingDialog(dialog){dialog.showModal();dialog.querySelector('.reading-dialog-close').focus();}
@@ -317,7 +329,8 @@
   }
 
   function restoreSharedReading(){
-    var token=new URL(location.href).searchParams.get('reading');
+    var params=new URL(location.href).searchParams;
+    var token=params.get('reading');
     if(!token)return;
     var shared=window.NORU.core.decodeReading(token);
     if(!shared){showToast('공유 결과 링크가 올바르지 않습니다.');return;}
@@ -333,11 +346,12 @@
     if(deckInput)deckInput.checked=true;
     if(countInput)countInput.checked=true;
     updateTopicButtons();renderSpInfo();
-    window.NORU.renderResultScreen(true);
-    if(new URL(location.href).searchParams.get('view')==='main'){
+    renderReadingSummary();
+    if(params.get('view')==='main'){
       overviewMode='main';
       renderOverview();
     }
+    openSharedResultPage();
     document.title='NORU '+currentSummary.topicInfo.resultTitle;
   }
 

@@ -66,7 +66,7 @@
     renderDictionary();
     show('s6');
   });
-  document.getElementById('bk6').addEventListener('click',function(){goBack('s0');});
+  document.getElementById('bk6').addEventListener('click',resetAll);
   document.getElementById('dictionarySearch').addEventListener('input',function(){
     query=this.value.trim().replace(/\s/g,'').toLowerCase();
     renderDictionary();

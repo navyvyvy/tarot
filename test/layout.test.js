@@ -95,6 +95,7 @@ test('topic presets and shared result use one readable result sheet', function()
   assert.match(index, /id="openReadingDetails"/);
   assert.match(index, /id="openExtraDetails"/);
   assert.match(index, /id="shareDialog"/);
+  assert.match(index, /id="startNewReading"[^>]+href="\.\/\?mode=tarot"/);
   assert.match(index, /class="share-dialog-actions"><button class="btn-save-image" id="saveReadingImage"/);
   assert.match(index, /class="reading-actions"><button class="btn-share"[^>]+>결과 공유<\/button><button class="btn-reset" id="rst4"/);
   assert.match(index, /class="sr-only" id="readingSpreadTitle">선택한 카드/);
@@ -105,6 +106,7 @@ test('topic presets and shared result use one readable result sheet', function()
   assert.doesNotMatch(summary, /이 요약은 선택을 대신/);
   assert.match(summary, /reading-card-art/);
   assert.match(summary, /createShareUrl/);
+  assert.match(summary, /function openSharedResultPage\(\)/);
   assert.match(summary, /decodeReading/);
   assert.match(summary, /cardImgUrl\(entry\.card\)/);
   assert.match(summary, /function drawCard\(entry,image,x,y\)/);
@@ -115,6 +117,7 @@ test('topic presets and shared result use one readable result sheet', function()
   assert.match(css, /\.reading-detail-trigger\s*\{/);
   assert.doesNotMatch(css, /\.result-extra-grid \.result-frame\s*\{/);
   assert.match(css, /body:has\(#s4\.ON\) \.wrap > header\s*\{/);
+  assert.match(css, /body\.shared-result-page \.wrap/);
 });
 
 test('spread choices preview their layouts and card picking keeps a tactile stage', function() {
@@ -174,8 +177,8 @@ test('navigation buttons share one hierarchy without decorative arrows', functio
   const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
   assert.doesNotMatch(index, /[←→]/);
-  assert.match(css, /\.btn-go, \.btn-rev, \.btn-more, \.btn-share, \.btn-save-image, \.m-close, \.back-btn, \.btn-reset\s*\{/);
-  assert.match(css, /\.btn-go, \.btn-rev, \.btn-more, \.btn-share, \.btn-save-image, \.m-close, \.back-btn, \.btn-reset\s*\{[^}]*font:\s*700\s*\.82rem/);
+  assert.match(css, /\.btn-go, \.btn-rev, \.btn-more, \.btn-share, \.btn-save-image, \.btn-new-reading, \.m-close, \.back-btn, \.btn-reset\s*\{/);
+  assert.match(css, /\.btn-go, \.btn-rev, \.btn-more, \.btn-share, \.btn-save-image, \.btn-new-reading, \.m-close, \.back-btn, \.btn-reset\s*\{[^}]*font:\s*700\s*\.82rem/);
   assert.match(css, /\.back-btn, \.btn-reset, \.btn-save-image\s*\{/);
   assert.match(css, /\.result-topic\s*\{[^}]*font:[^}]*1\.4rem/);
   assert.match(css, /\.reading-heading h2\s*\{[^}]*font:\s*700\s*\.76rem/);

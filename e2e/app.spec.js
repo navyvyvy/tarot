@@ -130,13 +130,13 @@ test('서비스 워커는 앱 셸만 먼저 캐시한다', async function({ page
   await page.evaluate(async function() { await navigator.serviceWorker.ready; });
   await expect.poll(async function() {
     return page.evaluate(async function() {
-      const cache = await caches.open('noru-v53');
+      const cache = await caches.open('noru-v57');
       return (await cache.keys()).length;
     });
   }).toBeGreaterThan(0);
 
   const cached = await page.evaluate(async function() {
-    const cache = await caches.open('noru-v53');
+    const cache = await caches.open('noru-v57');
     return (await cache.keys()).map(function(request) { return request.url; });
   });
   expect(cached.filter(function(url) { return url.includes('/assets/'); }).length).toBeLessThanOrEqual(3);
@@ -252,12 +252,14 @@ test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미�
   expect(sharedUrl).toMatch(/^https:\/\/navyvyvy\.github\.io\/tarot\/\?reading=/);
   expect(new URL(sharedUrl).searchParams.get('view')).toBe('all');
   await page.goto('/' + new URL(sharedUrl).search);
-  await expect(page.locator('#s4')).toHaveClass(/is-shared/);
-  await expect(page.locator('#readingCards .reading-card-art .result-name')).toHaveText(cardName);
-  await expect(page.locator('#extraReadings .reading-card-art .result-name')).toHaveText(extraCardName);
-  await expect(page.locator('#readingOverview')).toHaveText(combinedOverview);
+  await expect(page.locator('body')).toHaveClass(/shared-result-page/);
+  await expect(page.getByRole('dialog', { name: '원 카드' })).toBeVisible();
+  await expect(page.locator('.wrap')).toBeHidden();
+  await expect(page.locator('#sharePreviewCards .share-preview-card figcaption span')).toContainText(cardName);
+  await expect(page.locator('#sharePreviewExtraCards .share-preview-card figcaption span')).toContainText(extraCardName);
+  await expect(page.locator('#sharePreviewOverview')).toHaveText(combinedOverview);
+  await expect(page.getByRole('link', { name: '내 타로 보기' })).toHaveAttribute('href', './?mode=tarot');
 
-  await page.getByRole('button', { name: '결과 공유' }).click();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: '이미지 저장' }).click();
   const image = await download;
@@ -269,5 +271,21 @@ test('주제 프리셋 결과를 링크로 복원하고 같은 내용의 이미�
   expect(png.readUInt32BE(16)).toBe(1080);
   expect(png.readUInt32BE(20)).toBeGreaterThanOrEqual(1350);
   expect(png.length).toBeGreaterThan(20_000);
+  await page.getByRole('link', { name: '내 타로 보기' }).click();
+  await expect(page.getByRole('heading', { name: '어떤 덱으로 카드를 펼쳐볼까요?' })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('처음으로 버튼은 진입 쿼리를 지우고 첫 화면으로 돌아간다', async function({ page }) {
+  for (const entry of [['tarot', '#bk1'], ['birth', '#bk5'], ['birth', '#rst5'], ['dictionary', '#bk6']]) {
+    await page.goto('/?mode=' + entry[0] + '&qa=retain-probe');
+    await page.locator(entry[1]).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { name: '오늘은 무엇을 살펴볼까요?' })).toBeVisible();
+  }
+
+  await page.goto('/?mode=tarot&qa=retain-probe');
+  await page.evaluate(function() { show('s4'); });
+  await page.locator('#rst4').click();
+  await expect(page).toHaveURL(/\/$/);
 });
