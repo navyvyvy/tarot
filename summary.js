@@ -16,7 +16,7 @@
   }
 
   function patternText(summary){
-    if(S.deck==='major'||!summary.dominantSuit)return '';
+    if(S.pool==='major'||!summary.dominantSuit)return '';
     var suit=suitByCode(summary.dominantSuit);
     return suit?suit.n+' 카드가 가장 많이 나왔습니다. '+suit.guide:'';
   }
@@ -195,7 +195,7 @@
   window.NORU.renderReadingSummary=renderReadingSummary;
 
   function createShareUrl(){
-    var token=window.NORU.core.encodeReading({topic:S.topic,deck:S.deck,count:S.count,cards:S.revealed});
+    var token=window.NORU.core.encodeReading({topic:S.topic,deck:S.pool,count:S.count,cards:S.revealed});
     if(!token)return '';
     var canonical=document.querySelector('link[rel="canonical"]');
     var url=new URL(canonical?canonical.href:location.href);
@@ -402,10 +402,10 @@
       return byId[value.id]?Object.assign({},byId[value.id],{isRev:value.isRev}):null;
     });
     if(revealed.some(function(card){return !card;})){showToast('공유 결과를 불러오지 못했습니다.');return;}
-    Object.assign(S,{mode:'tarot',topic:shared.topic,deck:shared.deck,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false,readingVersion:shared.version});
-    var deckInput=document.querySelector('.deck-input[value="'+S.deck+'"]');
+    Object.assign(S,{mode:'tarot',topic:shared.topic,deckId:'rws',pool:shared.deck,count:shared.count,shuffled:[],selected:[],revealed:revealed,adding:false,readingVersion:shared.version});
+    var poolInput=document.querySelector('.pool-input[value="'+S.pool+'"]');
     var countInput=document.querySelector('.count-input[value="'+S.count+'"]');
-    if(deckInput)deckInput.checked=true;
+    if(poolInput)poolInput.checked=true;
     if(countInput)countInput.checked=true;
     updateTopicButtons();renderSpInfo();
     renderReadingSummary();

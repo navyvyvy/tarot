@@ -222,18 +222,18 @@ function cardName(card){
   return fmt.replace('{suit}',suit.n).replace('{num}',num.label);
 }
 
-var S=window.NORU.state={mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2};
+var S=window.NORU.state={mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2};
 
-function deckCards(){
-  return S.deck==='major'
+function poolCards(){
+  return S.pool==='major'
     ? window.LOCALE.major
-    : S.deck==='minor'
+    : S.pool==='minor'
       ? window.LOCALE.minorDataArray||[]
       : window.LOCALE.allCards||[];
 }
 
 function reshuffle(cards){
-  S.shuffled=CORE.shuffleDeck(cards||deckCards(),S.revProb);
+  S.shuffled=CORE.shuffleDeck(cards||poolCards(),S.revProb);
 }
 
 var _historyReady=false;
@@ -340,9 +340,9 @@ document.querySelectorAll('.topic-btn').forEach(function(button){
   button.addEventListener('click',function(){selectTopic(button.dataset.topic);});
 });
 
-document.querySelectorAll('.deck-input').forEach(function(input){
+document.querySelectorAll('.pool-input').forEach(function(input){
   input.addEventListener('change',function(){
-    if(input.checked)S.deck=input.value;
+    if(input.checked)S.pool=input.value;
   });
 });
 
@@ -386,8 +386,8 @@ document.getElementById('toS3').addEventListener('click',function() {
 
 function resetAll(){
   history.replaceState(history.state,'',new URL('.',location.href));
-  Object.assign(S,{mode:'',topic:'general',deck:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2});
-  document.querySelector('.deck-input[value="major"]').checked=true;
+  Object.assign(S,{mode:'',topic:'general',deckId:'rws',pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:2});
+  document.querySelector('.pool-input[value="major"]').checked=true;
   document.querySelector('.count-input[value="1"]').checked=true;
   document.getElementById('revSlider').value=50;
   document.getElementById('revVal').textContent='50%';
@@ -725,7 +725,7 @@ function renderResultCards(){
 
 function getRemaining(){
   var used={};S.revealed.forEach(function(c){used[c.id]=true;});
-  return deckCards().filter(function(c){return !used[c.id];});
+  return poolCards().filter(function(c){return !used[c.id];});
 }
 function refreshMore(){
   document.getElementById('btnMore').classList.toggle('ON',getRemaining().length>0);
