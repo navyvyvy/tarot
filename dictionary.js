@@ -8,20 +8,35 @@
     return card.suitName||'';
   }
 
-  function groupKey(card){return card.type==='major'?'major':card.suitCode;}
+  function cardOrder(card){
+    var number=Number(card.number);
+    return Number.isFinite(number)?number:card.id;
+  }
+
+  function groupKey(card){
+    if(activeDeck().id==='etteilla' && card.type==='major' && cardOrder(card)===78)return 'major-last';
+    return card.type==='major'?'major':card.suitCode;
+  }
+
+  function groupTitle(card,key,cards){
+    if(key==='major-last')return '마지막 트럼프 · 78번';
+    if(activeDeck().id==='etteilla' && key==='major')return '트럼프 · 1-21번';
+    var count=cards.filter(function(item){return groupKey(item)===key;}).length;
+    return suitName(card)+' · '+count+'장';
+  }
 
   function matches(card){
     var kind=card.type==='major'?'major':card.suitCode;
     if(filter==='minor' && card.type==='major')return false;
     if(filter!=='all' && filter!=='minor' && filter!==kind)return false;
     if(!query)return true;
-    var text=[cardName(card),suitName(card)].concat(card.keywords||[]).join(' ').replace(/\s/g,'').toLowerCase();
+    var text=[card.number,cardName(card),suitName(card)].concat(card.keywords||[],card.reversedKeywords||[]).join(' ').replace(/\s/g,'').toLowerCase();
     return text.includes(query);
   }
 
   function renderDictionary(){
     try{
-      var cards=activeDeck().cards('all').filter(matches);
+      var cards=activeDeck().cards('all').filter(matches).sort(function(a,b){return cardOrder(a)-cardOrder(b);});
       var grid=document.getElementById('dictionaryGrid');
       var empty=document.getElementById('dictionaryEmpty');
       var fragment=document.createDocumentFragment();
@@ -33,17 +48,17 @@
         if(key!==lastGroup){
           lastGroup=key;
           var group=document.createElement('h3');
-          var count=cards.filter(function(item){return groupKey(item)===key;}).length;
           group.className='dictionary-group-title';
-          group.textContent=suitName(card)+' · '+count+'장';
+          group.textContent=groupTitle(card,key,cards);
           fragment.appendChild(group);
         }
         var button=document.createElement('button');
         var name=cardName(card);
+        var label=card.type==='major'?card.number+' · '+name:name;
         button.type='button';
         button.className='dictionary-card';
-        button.setAttribute('aria-label',name+' 카드 해석 보기');
-        button.innerHTML='<span class="dictionary-frame"></span><strong>'+name+'</strong>';
+        button.setAttribute('aria-label',label+' 카드 해석 보기');
+        button.innerHTML='<span class="dictionary-frame"></span><strong>'+label+'</strong>';
         button.querySelector('.dictionary-frame').appendChild(makeImg(card,false));
         button.addEventListener('click',function(){openModal(card);});
         fragment.appendChild(button);
@@ -73,5 +88,8 @@
   document.getElementById('dictionaryFilter').addEventListener('change',function(){
     filter=this.value;
     renderDictionary();
+  });
+  document.addEventListener('noru:deckchange',function(){
+    if(document.getElementById('s6').classList.contains('ON'))renderDictionary();
   });
 })();

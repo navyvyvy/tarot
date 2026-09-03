@@ -29,7 +29,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icon-192.svg">
   <link rel="apple-touch-icon" href="icon-192.svg">
-  <link rel="stylesheet" href="css/style.css?v=64">
+  <link rel="stylesheet" href="css/style.css?v=70">
 </head>
 <body>
   <canvas id="cvs" aria-hidden="true"></canvas>
@@ -44,34 +44,30 @@
 
     <main id="appMain">
       <section class="step ON" id="s0" aria-labelledby="s0title">
-        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepStart">시작하기</span><span class="step-line"></span></div>
+        <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepStart">시작하기</span><span class="step-line"></span><button class="deck-control" type="button" data-deck-switch><span>사용 덱</span><strong data-deck-name>웨이트</strong></button></div>
         <h2 id="s0title" tabindex="-1">오늘은 무엇을 살펴볼까요?</h2>
         <section class="main-topic-group" aria-labelledby="mainTopicTitle">
           <h3 class="main-menu-heading" id="mainTopicTitle">어떤 흐름을 살펴볼까요?</h3>
           <div class="topic-grid">
-            <button class="topic-btn" type="button" data-topic="general" aria-pressed="false"><span class="topic-visual"><img src="assets/RWS_Tarot_18_Moon.webp" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>전체 흐름</strong><span>지금의 상황과 앞으로의 흐름</span></span></button>
-            <button class="topic-btn" type="button" data-topic="love" aria-pressed="false"><span class="topic-visual"><img src="assets/RWS_Tarot_06_Lovers.webp" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>관계 흐름</strong><span>서로의 감정과 관계의 방향</span></span></button>
-            <button class="topic-btn" type="button" data-topic="career" aria-pressed="false"><span class="topic-visual"><img src="assets/RWS_Tarot_07_Chariot.webp" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>일과 진로</strong><span>일의 변화와 앞으로의 방향</span></span></button>
-            <button class="topic-btn" type="button" data-topic="money" aria-pressed="false"><span class="topic-visual"><img src="assets/Pents01.webp" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>금전 흐름</strong><span>수입과 지출, 돈의 흐름</span></span></button>
+            <button class="topic-btn" type="button" data-topic="general" aria-pressed="false"><span class="topic-visual"><img src="assets/RWS_Tarot_18_Moon.webp" data-deck-card="general" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>전체 흐름</strong><span>지금의 상황과 앞으로의 흐름</span></span></button>
+            <button class="topic-btn" type="button" data-topic="love" aria-pressed="false"><span class="topic-visual"><img src="assets/RWS_Tarot_06_Lovers.webp" data-deck-card="love" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>관계 흐름</strong><span>서로의 감정과 관계의 방향</span></span></button>
+            <button class="topic-btn" type="button" data-topic="career" aria-pressed="false"><span class="topic-visual"><img src="assets/RWS_Tarot_07_Chariot.webp" data-deck-card="career" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>일과 진로</strong><span>일의 변화와 앞으로의 방향</span></span></button>
+            <button class="topic-btn" type="button" data-topic="money" aria-pressed="false"><span class="topic-visual"><img src="assets/Pents01.webp" data-deck-card="money" alt="" width="400" height="691" loading="eager"></span><span class="topic-copy"><strong>금전 흐름</strong><span>수입과 지출, 돈의 흐름</span></span></button>
           </div>
         </section>
         <section class="mode-tools" aria-labelledby="modeToolsTitle">
           <h3 class="main-menu-heading" id="modeToolsTitle">다른 방식으로 살펴보기</h3>
           <div class="mode-row">
             <button class="mode-card" id="mB" type="button">
-              <span class="mode-visual"><img src="assets/RWS_Tarot_19_Sun.webp" alt="" width="400" height="691" loading="eager"></span>
+              <span class="mode-visual"><img src="assets/RWS_Tarot_19_Sun.webp" data-deck-card="birth" alt="" width="400" height="691" loading="eager"></span>
               <span class="mode-copy"><strong class="mode-name" data-i18n="ui.modeBirth">탄생 카드</strong><span class="mode-desc" data-i18n="ui.modeBirthDesc">생년월일로 탄생 카드와 그 상징을 찾아보세요</span></span>
             </button>
             <button class="mode-card" id="mD" type="button">
-              <span class="mode-visual"><img src="assets/RWS_Tarot_02_High_Priestess.webp" alt="" width="400" height="691" loading="eager"></span>
+              <span class="mode-visual"><img src="assets/RWS_Tarot_02_High_Priestess.webp" data-deck-card="dictionary" alt="" width="400" height="691" loading="eager"></span>
               <span class="mode-copy"><strong class="mode-name" data-i18n="ui.modeDictionary">카드 사전</strong><span class="mode-desc" data-i18n="ui.modeDictionaryDesc">메이저·마이너 78장의 상징과 정·역방향 해석을 찾아보세요</span></span>
             </button>
           </div>
         </section>
-        <div class="offline-tool" id="offlineTool" hidden>
-          <button class="back-btn offline-save" id="offlineSave" type="button" aria-describedby="offlineStatus">오프라인으로 저장</button>
-          <p class="offline-status" id="offlineStatus" aria-live="polite">카드 78장을 이 기기에 저장해 둘 수 있어요.</p>
-        </div>
       </section>
 
       <section class="step" id="s1" aria-labelledby="s1title" hidden>
@@ -129,8 +125,8 @@
           <section class="reading-spread" aria-labelledby="readingSpreadTitle"><h3 class="sr-only" id="readingSpreadTitle">선택한 카드</h3><div id="s4grid"></div><section class="result-extras" id="resultExtras" aria-labelledby="resultExtrasTitle" hidden><h3 id="resultExtrasTitle">추가 카드</h3><div class="result-extra-grid" id="s4extraGrid"></div></section></section>
           <section class="reading-overview" aria-labelledby="readingOverviewTitle"><div class="reading-overview-head"><h3 id="readingOverviewTitle">종합 평가</h3><span id="readingOverviewTopic"></span><div class="overview-switch" id="overviewSwitch" aria-label="종합 평가 범위" hidden><button type="button" data-overview="main" aria-pressed="true">처음 결과</button><button type="button" data-overview="all" aria-pressed="false">추가 카드 포함</button></div></div><p id="readingOverview"></p></section>
           <div class="reading-disclosures"><button class="reading-detail-trigger" id="openReadingDetails" type="button"><span>카드별 해석</span><small>모아 보기</small></button></div>
+          <div class="reading-actions"><button class="btn-share" id="shareReading" type="button">결과 공유</button><button class="btn-reset" id="rst4" type="button">처음으로</button></div>
         </article>
-        <div class="reading-actions"><button class="btn-share" id="shareReading" type="button">결과 공유</button><button class="btn-reset" id="rst4" type="button">처음으로</button></div>
       </section>
 
       <section class="step" id="s5" aria-labelledby="s5title" hidden>
@@ -150,6 +146,13 @@
         <div class="step-hd"><span class="step-lbl" data-i18n="ui.stepDictionary">카드 사전</span><span class="step-line"></span><button class="back-btn" id="bk6" type="button">처음으로</button></div>
         <h2 id="s6title" tabindex="-1">카드 사전</h2>
         <p class="dictionary-intro">이름이나 키워드로 카드를 찾아보세요. 카드를 누르면 상징부터 정·역방향, 관계·직업 해석까지 자세히 볼 수 있어요.</p>
+        <div class="dictionary-settings">
+          <button class="deck-control dictionary-deck-control" type="button" data-deck-switch><span>보고 있는 덱</span><strong data-deck-name>웨이트</strong></button>
+          <div class="offline-tool" id="offlineTool" hidden>
+            <button class="back-btn offline-save" id="offlineSave" type="button" aria-describedby="offlineStatus">오프라인으로 저장</button>
+            <p class="offline-status" id="offlineStatus" aria-live="polite">유니버설 웨이트 78장을 이 기기에 저장해 둘 수 있어요.</p>
+          </div>
+        </div>
         <div class="dictionary-tools">
           <label class="dictionary-search"><span>카드 검색</span><input id="dictionarySearch" type="search" placeholder="예: 여사제, 시작, 컵" autocomplete="off"></label>
           <label class="dictionary-filter"><span>카드 종류</span><select id="dictionaryFilter"><option value="all">전체 78장</option><option value="major">메이저 아르카나 · 22장</option><option value="minor">마이너 아르카나 · 56장</option><option value="wands">마이너 · 완드</option><option value="cups">마이너 · 컵</option><option value="swords">마이너 · 소드</option><option value="pentacles">마이너 · 펜타클</option></select></label>
@@ -165,17 +168,19 @@
   <div class="ov" id="ovRv" role="status" aria-live="polite"><div class="rv-row" aria-hidden="true"><div class="rv-c"></div><div class="rv-c"></div><div class="rv-c"></div><div class="rv-c"></div></div><div class="ov-txt">카드의 메시지를 읽고 있어요...</div><div class="ov-sub">잠시만 기다려 주세요</div></div>
 
   <dialog class="img-zoom-bg" id="imgZoom" aria-label="카드 이미지 확대"><button class="img-zoom-close" id="imgZoomClose" type="button" aria-label="확대 이미지 닫기">닫기</button><div class="img-zoom-wrap" id="imgZoomWrap"></div></dialog>
+  <dialog class="deck-dialog" id="deckDialog" aria-labelledby="deckDialogTitle"><div class="deck-dialog-shell"><header class="deck-dialog-head"><div><p>카드 덱</p><h2 id="deckDialogTitle">어떤 그림으로 볼까요?</h2></div><button class="deck-dialog-close" id="deckDialogClose" type="button">닫기</button></header><p class="deck-dialog-intro">고른 덱은 다음 리딩과 카드 사전에 함께 적용됩니다.</p><div class="deck-options" id="deckOptions"></div><aside class="deck-guide" id="deckGuide" hidden><strong id="deckGuideTitle"></strong><p id="deckGuideText"></p></aside></div></dialog>
   <dialog class="mbg" id="mbg" aria-labelledby="mName"><div class="msh"><div class="m-grip" aria-hidden="true"></div><div class="m-top"><div class="m-imgbox" id="mImgBox"></div><div class="m-meta"><div class="m-arc" id="mArc"></div><h2 class="m-nm" id="mName"></h2><div id="mRevTag"></div><div class="m-kws" id="mKws"></div></div></div><div class="m-body" id="mBody"></div></div><button class="m-close" id="mClose" type="button" autofocus>닫기</button></dialog>
   <dialog class="reading-dialog" id="readingDetails" aria-labelledby="readingDetailsTitle"><div class="reading-dialog-shell"><header class="reading-dialog-head"><div><p id="readingDetailsMeta"></p><h2 id="readingDetailsTitle">카드별 해석</h2></div><button class="reading-dialog-close" id="readingDetailsClose" type="button">닫기</button></header><div class="reading-dialog-body"><div class="reading-dialog-tabs" id="readingDetailTabs" role="tablist" aria-label="카드별 해석 구분" hidden><button class="is-active" id="readingMainTab" type="button" role="tab" aria-selected="true" aria-controls="readingMainPanel" data-reading-tab="main">선택한 카드</button><button id="readingExtraTab" type="button" role="tab" aria-selected="false" aria-controls="readingExtraPanel" data-reading-tab="extra" tabindex="-1">추가 카드</button></div><section class="reading-tab-panel is-active" id="readingMainPanel" role="tabpanel" aria-labelledby="readingMainTab"><div class="reading-cards" id="readingCards"></div></section><section class="reading-tab-panel" id="readingExtraPanel" role="tabpanel" aria-labelledby="readingExtraTab" hidden><div class="reading-cards" id="extraReadings"></div></section></div></div></dialog>
   <dialog class="share-dialog" id="shareDialog" aria-labelledby="shareDialogTitle"><div class="share-dialog-shell"><header class="share-dialog-head"><div><a class="share-dialog-brand" id="shareDialogBrand" href="./" hidden>NORU</a><p id="shareDialogMeta"></p><h2 id="shareDialogTitle" tabindex="-1">공유할 결과 확인</h2></div><button class="share-dialog-close" id="shareDialogClose" type="button" aria-label="공유 창 닫기">닫기</button></header><div class="share-dialog-body"><div class="share-preview-spread"><section aria-labelledby="shareCardsTitle"><h3 class="sr-only" id="shareCardsTitle">선택한 카드</h3><div class="share-preview-cards" id="sharePreviewCards"></div></section><section class="share-preview-extra" id="sharePreviewExtra" aria-labelledby="shareExtraTitle"><h3 id="shareExtraTitle">추가 카드</h3><div class="share-preview-cards" id="sharePreviewExtraCards"></div></section></div><section class="share-preview-overview" aria-labelledby="shareOverviewTitle"><div class="share-preview-overview-head"><h3 id="shareOverviewTitle">종합 평가</h3><div class="overview-switch" id="shareOverviewSwitch" aria-label="공유할 종합 평가" hidden><button type="button" data-share-overview="main" aria-pressed="true">처음 결과</button><button type="button" data-share-overview="all" aria-pressed="false">추가 카드 포함</button></div></div><p id="sharePreviewOverview"></p></section></div><div class="share-dialog-actions"><button class="btn-save-image" id="saveReadingImage" type="button">이미지 저장</button><button class="btn-share" id="confirmShare" type="button">공유하기</button><a class="btn-new-reading" id="startNewReading" href="./?mode=tarot" hidden>내 타로 보기</a></div></div></dialog>
   <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
 
-  <script src="card.js?v=64"></script>
-<script src="locale/ko.js?v=64"></script>
-  <script src="core.js?v=64"></script>
-<script src="app.js?v=64"></script>
-  <script src="detail.js?v=64"></script>
-  <script src="dictionary.js?v=64"></script>
-  <script src="summary.js?v=64"></script>
+  <script src="card.js?v=70"></script>
+<script src="locale/ko.js?v=70"></script>
+  <script src="locale/etteilla-keywords.js?v=70"></script>
+  <script src="core.js?v=70"></script>
+<script src="app.js?v=70"></script>
+  <script src="detail.js?v=70"></script>
+  <script src="dictionary.js?v=70"></script>
+  <script src="summary.js?v=70"></script>
 </body>
 </html>

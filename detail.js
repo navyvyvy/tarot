@@ -22,7 +22,8 @@ function openModal(card) {
       : `${L.modalArcMinor} · ${full.suitName || ''}`;
     document.getElementById('mName').textContent = cardName(full);
     document.getElementById('mRevTag').innerHTML = card.isRev ? `<span class="m-rev">${L.modalReversed}</span>` : '';
-    document.getElementById('mKws').innerHTML = full.keywords.map(k => `<span class="modal-kw">${k}</span>`).join('');
+    const keywords = card.isRev && full.reversedKeywords || full.keywords || [];
+    document.getElementById('mKws').innerHTML = keywords.map(k => `<span class="modal-kw">${k}</span>`).join('');
 
     const reverseNote = (context) => card.isRev ? `<div class="modal-context-note">
       <strong>${L.modalReversedContext}</strong>

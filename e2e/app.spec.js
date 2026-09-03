@@ -15,6 +15,30 @@ test('메인 화면과 카드 사전이 넘침 없이 동작한다', async funct
 
   await expect(page.getByRole('heading', { name: 'NORU' })).toBeVisible();
   await expect(page.getByRole('button', { name: /카드 사전/ })).toBeVisible();
+  await page.getByRole('button', { name: /사용할 카드 덱 변경/ }).click();
+  await expect(page.getByRole('dialog', { name: '어떤 그림으로 볼까요?' })).toBeVisible();
+  await expect(page.locator('[data-select-deck]')).toHaveCount(3);
+  await expect(page.locator('[data-select-deck="etteilla"]')).toBeEnabled();
+  await page.locator('[data-deck-info="etteilla"]').click();
+  await expect(page.locator('#deckGuide')).toContainText('서로 다른 뜻');
+  await page.locator('[data-select-deck="etteilla"]').click();
+  await expect(page.locator('#s0 [data-deck-name]')).toHaveText('에테이야');
+  expect(await page.evaluate(function() { return window.NORU.deckCatalog.get('etteilla').cards().length; })).toBe(78);
+  expect(await page.evaluate(function() { return window.NORU.deckCatalog.get('etteilla').card(13).name; })).toBe('결혼');
+  expect(await page.locator('[data-deck-card]').evaluateAll(function(images) {
+    return images.every(function(image) { return image.getAttribute('src').includes('assets/decks/etteilla/'); });
+  })).toBe(true);
+  await page.getByRole('button', { name: /카드 사전/ }).click();
+  await expect(page.locator('.dictionary-card strong').first()).toHaveText('1 · 카오스');
+  await expect(page.locator('.dictionary-card strong').last()).toHaveText('78 · 광기');
+  await expect(page.getByRole('heading', { name: '마지막 트럼프 · 78번' })).toBeVisible();
+  await page.locator('#bk6').click();
+  await page.getByRole('button', { name: /사용할 카드 덱 변경/ }).click();
+  await page.locator('[data-select-deck="marseille"]').click();
+  await expect(page.locator('#s0 [data-deck-name]')).toHaveText('마르세유');
+  expect(await page.locator('[data-deck-card]').evaluateAll(function(images) {
+    return images.every(function(image) { return image.getAttribute('src').includes('assets/decks/marseille/'); });
+  })).toBe(true);
   if (testInfo.project.name === 'desktop') {
     const topicButton = page.getByRole('button', { name: /전체 흐름 지금의 상황과 앞으로의 흐름/ });
     await topicButton.hover();
@@ -23,12 +47,36 @@ test('메인 화면과 카드 사전이 넘침 없이 동작한다', async funct
   expect(await page.evaluate(function() { return document.documentElement.scrollWidth <= document.documentElement.clientWidth; })).toBe(true);
 
   await page.getByRole('button', { name: /카드 사전/ }).click();
+  await expect(page.locator('#s6 [data-deck-name]')).toHaveText('마르세유');
   await expect(page.getByRole('heading', { name: '카드 사전' })).toBeVisible();
   await expect(page.getByRole('button', { name: /카드 해석 보기/ })).toHaveCount(78);
+  await expect(page.locator('.dictionary-frame img').first()).toHaveAttribute('src', /assets\/decks\/marseille/);
+  await expect(page.locator('.dictionary-card strong').first()).toHaveText('0 · 광대');
   await expect(page.getByRole('button', { name: /카드 해석 보기/ }).first()).not.toContainText(/메이저|마이너/);
   await expect(page.getByRole('heading', { name: '메이저 아르카나 · 22장' })).toBeVisible();
   for (const suit of ['완드', '컵', '소드', '펜타클']) await expect(page.getByRole('heading', { name: suit + ' · 14장' })).toBeVisible();
+  expect(await page.locator('.dictionary-deck-control').evaluate(function(button) { return Math.round(button.getBoundingClientRect().height); })).toBeLessThanOrEqual(48);
+  if (testInfo.project.name === 'desktop') {
+    expect(await page.locator('.dictionary-settings').evaluate(function(settings) { return Math.round(settings.getBoundingClientRect().height); })).toBeLessThanOrEqual(48);
+  }
   expect(await page.locator('.dictionary-card strong').first().evaluate(function(name) { return getComputedStyle(name).textAlign; })).toBe('center');
+
+  const etteillaCopy = await page.evaluate(function() {
+    const cards = window.NORU.deckCatalog.get('etteilla').cards('all');
+    return {
+      count: cards.length,
+      uniqueUpright: new Set(cards.map(function(card) { return card.up; })).size,
+      uniqueReversed: new Set(cards.map(function(card) { return card.rv; })).size,
+      uniqueSymbols: new Set(cards.map(function(card) { return card.symbolism; })).size,
+      hasUsefulKeywords: cards.every(function(card) {
+        return card.keywords.length >= 3 && card.reversedKeywords.length >= 3;
+      }),
+      hasTemplateCopy: cards.some(function(card) {
+        return /흐름을 나타냅니다|고유 도상과 방향별 의미/.test(card.up + card.rv + card.symbolism);
+      })
+    };
+  });
+  expect(etteillaCopy).toEqual({ count: 78, uniqueUpright: 78, uniqueReversed: 78, uniqueSymbols: 78, hasUsefulKeywords: true, hasTemplateCopy: false });
   await page.getByLabel('카드 종류').selectOption('minor');
   await expect(page.getByRole('button', { name: /카드 해석 보기/ })).toHaveCount(56);
   await page.getByLabel('카드 종류').selectOption('cups');
@@ -80,6 +128,17 @@ test('켈틱 크로스는 열 장을 겹치지 않게 보여준다', async funct
   expect(errors).toEqual([]);
 });
 
+test('리딩을 시작한 뒤에는 덱을 바꿀 수 없다', async function({ page }) {
+  await page.goto('/');
+  await page.getByRole('button', { name: /사용할 카드 덱 변경/ }).click();
+  await page.locator('[data-select-deck="marseille"]').click();
+  await page.getByRole('button', { name: /전체 흐름 지금의 상황과 앞으로의 흐름/ }).click();
+  await expect(page.getByRole('heading', { name: '어떤 카드까지 섞을까요?' })).toBeVisible();
+  await expect(page.locator('#s1 [data-deck-switch]')).toHaveCount(0);
+  await page.evaluate(function() { selectDeck('rws'); });
+  expect(await page.evaluate(function() { return S.deckId; })).toBe('marseille');
+});
+
 test('선택한 카드와 추가 카드는 같은 크기로 결과에 모인다', async function({ page }, testInfo) {
   await page.goto('/?mode=tarot');
   await page.getByRole('button', { name: /스프레드 선택/ }).click();
@@ -108,6 +167,14 @@ test('선택한 카드와 추가 카드는 같은 크기로 결과에 모인다'
   await expect(page.locator('#s4grid .result-card')).toHaveCount(3);
   await expect(page.locator('#readingSpreadTitle')).toHaveClass(/sr-only/);
   await expect(page.locator('#readingOverview')).toContainText('과거에는');
+  const resultActionSizes = await page.locator('#btnMore, #bk4, #openReadingDetails, #shareReading, #rst4').evaluateAll(function(buttons) {
+    return buttons.map(function(button) { return Math.round(button.getBoundingClientRect().height); });
+  });
+  expect(new Set(resultActionSizes).size).toBe(1);
+  const resultNavWidths = await page.locator('#btnMore, #bk4').evaluateAll(function(buttons) {
+    return buttons.map(function(button) { return Math.round(button.getBoundingClientRect().width); });
+  });
+  expect(new Set(resultNavWidths).size).toBe(1);
   const mainMeanings = await page.evaluate(function() {
     return S.revealed.slice(0, S.count).map(function(card) {
       const text = card.isRev ? card.rv : card.up;
@@ -121,6 +188,15 @@ test('선택한 카드와 추가 카드는 같은 크기로 결과에 모인다'
       return document.getElementById('s4').getBoundingClientRect().bottom <= innerHeight + 1;
     });
     expect(fitsViewport).toBe(true);
+    await page.setViewportSize({ width: 880, height: 900 });
+    const resultAlignment = await page.evaluate(function() {
+      const overview = document.getElementById('readingOverview').parentElement.getBoundingClientRect();
+      const actions = document.querySelector('.reading-actions').getBoundingClientRect();
+      return { overviewLeft: Math.round(overview.left), overviewRight: Math.round(overview.right), actionsLeft: Math.round(actions.left), actionsRight: Math.round(actions.right) };
+    });
+    expect(resultAlignment.actionsLeft).toBeGreaterThanOrEqual(resultAlignment.overviewLeft - 1);
+    expect(resultAlignment.actionsRight).toBeLessThanOrEqual(resultAlignment.overviewRight + 1);
+    await page.setViewportSize({ width: 1280, height: 720 });
   }
   await page.getByRole('button', { name: '추가 카드' }).click();
   await page.locator('.track-card').first().click();
@@ -166,13 +242,13 @@ test('서비스 워커는 앱 셸만 먼저 캐시한다', async function({ page
   await page.evaluate(async function() { await navigator.serviceWorker.ready; });
   await expect.poll(async function() {
     return page.evaluate(async function() {
-      const cache = await caches.open('noru-app-v64');
+      const cache = await caches.open('noru-app-v70');
       return (await cache.keys()).length;
     });
   }).toBeGreaterThan(0);
 
   const cached = await page.evaluate(async function() {
-    const cache = await caches.open('noru-app-v64');
+    const cache = await caches.open('noru-app-v70');
     return (await cache.keys()).map(function(request) { return request.url; });
   });
   expect(cached.filter(function(url) { return url.includes('/assets/'); }).length).toBeLessThanOrEqual(3);
@@ -186,6 +262,7 @@ test('78장 덱을 저장하면 실제로 오프라인에서 카드가 열린다
     await caches.delete('noru-cards-v1');
   });
 
+  await page.getByRole('button', { name: /카드 사전/ }).click();
   await page.getByRole('button', { name: '오프라인으로 저장' }).click();
   await expect(page.locator('#offlineStatus')).toHaveText('78장 저장 완료');
 

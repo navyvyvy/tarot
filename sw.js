@@ -1,19 +1,20 @@
 importScripts('./card.js');
 
 const APP_CACHE_PREFIX = 'noru-app-';
-const CACHE_NAME = 'noru-app-v64';
+const CACHE_NAME = 'noru-app-v70';
 const CARD_CACHE_NAME = 'noru-cards-v1';
 const APP_SHELL = [
   './',
   './index.html',
-  './css/style.css?v=64',
-  './core.js?v=64',
-  './card.js?v=64',
-  './locale/ko.js?v=64',
-  './app.js?v=64',
-  './detail.js?v=64',
-  './dictionary.js?v=64',
-  './summary.js?v=64',
+  './css/style.css?v=70',
+  './core.js?v=70',
+  './card.js?v=70',
+  './locale/ko.js?v=70',
+  './locale/etteilla-keywords.js?v=70',
+  './app.js?v=70',
+  './detail.js?v=70',
+  './dictionary.js?v=70',
+  './summary.js?v=70',
   './manifest.json',
   './icon-192.svg',
   './icon-512.svg'
@@ -74,7 +75,7 @@ self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (url.pathname.endsWith('.webp')) {
+  if (/\.(?:webp|jpe?g)$/i.test(url.pathname)) {
     event.respondWith(
       caches.open(CARD_CACHE_NAME).then(function(cache) {
         return cache.match(event.request).then(function(cached) {

@@ -216,7 +216,110 @@ function cardName(card){
   return full.name||'';
 }
 
-var S=window.NORU.state={mode:'',topic:'general',deckId:window.NORU.deckCatalog.defaultId,pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3};
+function initialDeckId(){
+  try{
+    var saved=localStorage.getItem('noru-deck');
+    var deck=window.NORU.deckCatalog.get(saved);
+    if(deck&&deck.available)return saved;
+  }catch(e){}
+  return window.NORU.deckCatalog.defaultId;
+}
+
+var S=window.NORU.state={mode:'',topic:'general',deckId:initialDeckId(),pool:'major',count:1,shuffled:[],selected:[],revealed:[],adding:false,revProb:0.5,readingVersion:3};
+
+function deckPreview(deck){
+  if(deck.previewImage)return deck.previewImage;
+  var card=deck.card(deck.previewCardId);
+  return card?deck.image(card):'';
+}
+
+function canSwitchDeck(){
+  var step=document.querySelector('.step.ON');
+  return step&&(step.id==='s0'||step.id==='s6');
+}
+
+function renderDeckControls(){
+  var deck=activeDeck();
+  document.querySelectorAll('[data-deck-name]').forEach(function(name){name.textContent=deck.shortName;});
+  document.querySelectorAll('[data-deck-card]').forEach(function(image){
+    var card=deck.card(deck.featuredCards[image.dataset.deckCard]);
+    if(card)image.src=deck.image(card);
+  });
+  document.querySelectorAll('[data-deck-switch]').forEach(function(button){
+    button.setAttribute('aria-label','사용할 카드 덱 변경. 현재 '+deck.name);
+  });
+  var offlineTool=document.getElementById('offlineTool');
+  var offlineSave=document.getElementById('offlineSave');
+  var offlineStatus=document.getElementById('offlineStatus');
+  if(offlineTool&&offlineTool.dataset.deckId!==deck.id){
+    offlineTool.dataset.deckId=deck.id;
+    offlineSave.classList.remove('is-complete');
+    offlineSave.textContent='오프라인으로 저장';
+    offlineStatus.textContent=deck.name+' '+deck.assets().length+'장을 이 기기에 저장해 둘 수 있어요.';
+  }
+}
+
+function renderDeckOptions(){
+  var current=activeDeck();
+  var options=document.getElementById('deckOptions');
+  var guide=document.getElementById('deckGuide');
+  guide.hidden=true;
+  guide.removeAttribute('data-deck-id');
+  options.innerHTML=window.NORU.deckCatalog.list().map(function(deck){
+    var preview=deckPreview(deck);
+    var selected=deck.id===current.id;
+    return '<article class="deck-option'+(selected?' is-selected':'')+(deck.available?'':' is-unavailable')+'">'
+      +'<button class="deck-option-select" type="button" data-select-deck="'+deck.id+'"'+(deck.available?'':' disabled')+' aria-pressed="'+selected+'">'
+      +'<span class="deck-option-frame">'+(preview?'<img src="'+preview+'" alt="" width="480" height="793">':'')+'</span>'
+      +'<span class="deck-option-copy"><strong>'+deck.name+'</strong><span>'+deck.tradition+'</span><small>'+deck.description+'</small></span>'
+      +'<span class="deck-option-status">'+(selected?'사용 중':deck.status||'선택')+'</span></button>'
+      +'<button class="deck-info-button" type="button" data-deck-info="'+deck.id+'" aria-expanded="false" aria-controls="deckGuide" aria-label="'+deck.name+' 설명 보기">?</button>'
+      +'</article>';
+  }).join('');
+  options.querySelectorAll('[data-select-deck]').forEach(function(button){
+    button.addEventListener('click',function(){selectDeck(button.dataset.selectDeck);});
+  });
+  options.querySelectorAll('[data-deck-info]').forEach(function(button){
+    button.addEventListener('click',function(){toggleDeckGuide(button.dataset.deckInfo);});
+  });
+}
+
+function toggleDeckGuide(id){
+  var deck=window.NORU.deckCatalog.get(id);
+  var guide=document.getElementById('deckGuide');
+  var close=guide.dataset.deckId===id&&!guide.hidden;
+  document.querySelectorAll('[data-deck-info]').forEach(function(button){
+    button.setAttribute('aria-expanded',String(!close&&button.dataset.deckInfo===id));
+  });
+  guide.hidden=close;
+  if(close)return;
+  guide.dataset.deckId=id;
+  document.getElementById('deckGuideTitle').textContent=deck.name;
+  document.getElementById('deckGuideText').textContent=deck.guide;
+}
+
+function selectDeck(id){
+  var deck=window.NORU.deckCatalog.get(id);
+  if(!canSwitchDeck()||!deck||!deck.available)return;
+  S.deckId=id;
+  try{localStorage.setItem('noru-deck',id);}catch(e){}
+  renderDeckControls();
+  document.dispatchEvent(new CustomEvent('noru:deckchange'));
+  document.getElementById('deckDialog').close();
+}
+
+function initDeckChooser(){
+  renderDeckControls();
+  document.querySelectorAll('[data-deck-switch]').forEach(function(button){
+    button.addEventListener('click',function(){
+      if(!canSwitchDeck())return;
+      renderDeckOptions();
+      document.getElementById('deckDialog').showModal();
+    });
+  });
+  document.getElementById('deckDialogClose').addEventListener('click',function(){document.getElementById('deckDialog').close();});
+  document.getElementById('deckDialog').addEventListener('click',function(event){if(event.target===this)this.close();});
+}
 
 function poolCards(){
   return activeDeck().cards(S.pool);
@@ -619,7 +722,7 @@ function mkCard(card, lbl, idx, revealIndex) {
 
     const numPrefix = typeof idx === 'number' ? `${idx + 1}. ` : '';
     const directionClass = card.isRev ? 'result-badge result-direction is-reversed' : 'result-badge result-direction';
-    const keywordBadges = (card.keywords || []).slice(0, 2).map(function(keyword) {
+    const keywordBadges = (card.isRev && card.reversedKeywords || card.keywords || []).slice(0, 2).map(function(keyword) {
       return `<span class="result-badge">${keyword}</span>`;
     }).join('');
 
@@ -893,6 +996,113 @@ function initializeData(){
   }
   rwsDeck.setCards(MAJ.concat(buildMinor()));
 
+  var marseilleDeck=window.NORU.deckCatalog.get('marseille');
+  if(marseilleDeck){
+    var marseilleOrder=[0,1,2,3,4,5,6,7,11,9,10,8,12,13,14,15,16,17,18,19,20,21];
+    var marseilleNumbers=['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'];
+    var marseilleMajors=marseilleOrder.map(function(sourceId,id){
+      var source=MAJ[sourceId];
+      return Object.assign({},source,{
+        id:id,
+        number:marseilleNumbers[id],
+        symbolism:'마르세유에서는 '+source.name+'의 자세와 시선, 카드 번호를 주변 카드와 함께 살펴봅니다.'
+      });
+    });
+    var marseilleMinors=buildMinor().map(function(card){
+      return Object.assign({},card,{symbolism:card.suitName+' 무늬와 '+card.name+'의 수 배열을 중심으로 살펴봅니다.'});
+    });
+    marseilleDeck.setCards(marseilleMajors.concat(marseilleMinors));
+  }
+
+  var etteillaDeck=window.NORU.deckCatalog.get('etteilla');
+  if(etteillaDeck){
+    var etteillaMajorNames=['광기','카오스','빛','식물','하늘','인간과 네발짐승','별','새와 물고기','휴식','정의','절제','힘','신중','결혼','강제력','질병','심판','죽음','배신자','빈곤','행운','불화'];
+    var etteillaMajorSymbols=[
+      '보따리와 지팡이를 든 방랑자 곁을 동물이 따라붙습니다. 앞만 보는 걸음은 충동과 무지를 함께 드러냅니다.',
+      '짙은 구름이 밝은 빈 중심을 둘러싸고 있습니다. 아직 형태를 갖추지 않은 혼돈과 그 안에서 시작되는 사유를 그립니다.',
+      '큰 별과 퍼지는 광채 아래 두 아이가 마주 서 있습니다. 빛이 감춰진 것을 드러내고 이해의 문을 여는 장면입니다.',
+      '두 탑 사이로 물이 흐르고 개들이 달을 향합니다. 말과 소문이 퍼지는 모습, 뒤집힌 자리의 물과 유동성을 함께 담습니다.',
+      '별자리 기호 아래 한 인물이 나무와 땅을 돌봅니다. 하늘의 질서와 현실의 손질, 분리와 정돈이 한 장면에 놓입니다.',
+      '원 안의 인물과 올리브 가지, 네 동물과 피라미드가 세계를 둘러쌉니다. 이동하는 인간과 머무는 대지가 대비됩니다.',
+      '해와 달, 별이 같은 하늘에 떠 있습니다. 밤의 가려짐과 낮의 드러남이 서로 맞서는 카드입니다.',
+      '고요한 물가에 새·물고기·뱀이 함께 나타납니다. 서로 다른 영역을 잇는 지지와 보호의 기반을 보여 줍니다.',
+      '자연 속 인물을 여러 겹의 원이 감쌉니다. 바깥 활동을 줄이고 자기 안으로 물러나는 휴식과 침묵을 나타냅니다.',
+      '왕좌의 인물이 저울과 칼을 함께 들고 있습니다. 균형을 재는 일과 결정을 집행하는 책임을 동시에 묻습니다.',
+      '날개 달린 인물이 두 그릇 사이로 물을 옮깁니다. 한쪽으로 치우치지 않는 조절과 화해의 움직임입니다.',
+      '왕좌의 인물이 사자를 곁에 두고 있습니다. 힘을 과시하기보다 다루는 능력, 그리고 권력이 향하는 방향을 보여 줍니다.',
+      '눈을 가린 인물이 뱀과 지팡이를 들고 앞으로 걷습니다. 보이지 않는 위험 앞에서 필요한 분별과 예견을 그립니다.',
+      '사제가 두 사람의 손을 이어 줍니다. 약속과 결합이 개인의 감정에서 공동의 합의로 넘어가는 순간입니다.',
+      '불꽃을 든 날개 달린 존재와 사슬에 묶인 두 인물이 보입니다. 강한 압박과 그 힘에 얽매이는 상태를 함께 보여 줍니다.',
+      '사제가 제단 위 도구를 가리킵니다. 몸과 마음의 기능이 어긋났는지 살피고 손볼 지점을 찾는 장면으로 읽습니다.',
+      '나팔을 부는 천사 아래 사람들이 일어섭니다. 지나간 일을 다시 보고 결론을 내리는 심판의 순간입니다.',
+      '낫을 든 해골이 폐허 사이를 지나갑니다. 끝과 소멸이 다음 상태를 위한 자리를 비우는 모습입니다.',
+      '등불을 든 수도사가 어두운 하늘 아래 홀로 걷습니다. 겉으로 드러난 경건함과 안에 감춘 의도를 함께 살핍니다.',
+      '번개가 지난 듯한 무너진 신전과 빈 길이 남아 있습니다. 갑작스러운 손실 뒤에 드러난 결핍과 고립을 그립니다.',
+      '검을 든 왕이 악어 위에 서고, 아래의 동물들은 고리로 이어져 있습니다. 운과 힘이 커지면서 생기는 지배 관계를 보여 줍니다.',
+      '왕관 쓴 기수가 서로 다른 두 말을 몰고 갑니다. 한 방향으로 모이지 않는 힘과 갈등을 통제해야 하는 장면입니다.'
+    ];
+    var etteillaRankNames={ace:'에이스','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','10':'10',page:'발레',knight:'기사',queen:'여왕',king:'왕'};
+    var etteillaMinorStarts={wands:35,cups:49,swords:63,pentacles:77};
+    var etteillaMinorMotifs={wands:'나뭇가지 모양 완드',cups:'금빛 잔',swords:'가느다란 검',pentacles:'원형 화폐'};
+    var etteillaRanks=['ace','2','3','4','5','6','7','8','9','10','page','knight','queen','king'];
+    function etteillaJosa(word,withBatchim,withoutBatchim){
+      var code=word.charCodeAt(word.length-1)-44032;
+      return word+(code>=0&&code<=11171&&code%28?withBatchim:withoutBatchim);
+    }
+    function etteillaDirection(words,number,reversed){
+      var variants=reversed?[
+        etteillaJosa(words[0],'이','가')+' 이 방향의 첫 단서입니다. '+etteillaJosa(words[1],'과','와')+' '+etteillaJosa(words[2],'은','는')+' 정방향의 반대가 아니라 별개의 상황으로 읽습니다.',
+        '뒤집힌 자리에서는 '+etteillaJosa(words[0],'이','가')+' 앞에 나옵니다. '+words[1]+'에서 '+words[2]+' 쪽으로 의미가 이어지는지 주변 카드를 확인해 보세요.',
+        etteillaJosa(words[0],'을','를')+' 중심으로 '+etteillaJosa(words[1],'과','와')+' '+etteillaJosa(words[2],'을','를')+' 함께 봅니다. 같은 카드의 정방향 뜻으로 되돌려 해석하지 않는 편이 좋습니다.',
+        '이 방향의 핵심은 '+words[0]+'입니다. '+etteillaJosa(words[1],'과','와')+' '+words[2]+' 중 어느 쪽이 실제 상황에 가까운지는 이웃 카드가 좁혀 줍니다.'
+      ]:[
+        etteillaJosa(words[0],'이','가')+' 중심에 있습니다. '+etteillaJosa(words[1],'과','와')+' '+etteillaJosa(words[2],'이','가')+' 지금 상황에서 어떤 순서로 드러나는지 함께 살펴봅니다.',
+        '이 카드는 '+words[0]+'에서 출발합니다. '+etteillaJosa(words[1],'과','와')+' '+etteillaJosa(words[2],'은','는')+' 같은 흐름을 구체화하는 다음 단서입니다.',
+        etteillaJosa(words[0],'을','를')+' 먼저 보고, '+etteillaJosa(words[1],'과','와')+' '+etteillaJosa(words[2],'이','가')+' 이를 돕거나 바꾸는지 읽습니다. 한 단어만 떼어 결론 내리지 않는 카드입니다.',
+        '핵심은 '+words[0]+'입니다. 여기에 '+etteillaJosa(words[1],'과','와')+' '+etteillaJosa(words[2],'을','를')+' 포개면 카드가 가리키는 상황이 더 또렷해집니다.'
+      ];
+      return variants[number%variants.length];
+    }
+    function etteillaMinorSymbol(card,number){
+      var rankIndex=etteillaRanks.indexOf(card.numCode);
+      var motif=etteillaMinorMotifs[card.suitCode];
+      if(rankIndex>=10)return card.suitName+'의 '+etteillaRankNames[card.numCode]+' 인물이 '+motif+'를 역할의 표식으로 지닙니다. 인물의 태도와 카드 '+number+'번의 두 방향 의미를 함께 봅니다.';
+      return card.suitName+'의 '+etteillaRankNames[card.numCode]+'에는 '+(rankIndex+1)+'개의 '+motif+'가 간결하게 배열되어 있습니다. 수의 반복과 카드 '+number+'번에 붙은 두 방향의 제목이 해석의 중심입니다.';
+    }
+    function withEtteillaMeaning(card,number,name,symbolism){
+      var source=window.ETTEILLA_KEYWORDS&&window.ETTEILLA_KEYWORDS[number];
+      if(!source)throw new Error('그랑 에테이야 '+number+'번 의미 자료를 찾지 못했습니다.');
+      var upright=source.upright;
+      var reversed=source.reversed;
+      return Object.assign({},card,{
+        name:name||card.suitName+'의 '+etteillaRankNames[card.numCode],
+        number:String(number),
+        keywords:upright.slice(),
+        reversedKeywords:reversed.slice(),
+        up:etteillaDirection(upright,number,false),
+        rv:etteillaDirection(reversed,number,true),
+        lv:'관계에서 먼저 볼 단서는 '+upright[0]+'입니다. 말과 행동 사이에 나타난 '+upright[1]+'의 모습도 함께 찾아보세요.',
+        ca:'일과 금전의 첫 신호는 '+upright[0]+'입니다. 결정과 자원 운용에 남은 '+upright[1]+'의 영향까지 짚습니다.',
+        symbolism:symbolism,
+        readingKey:'정방향은 '+upright.slice(0,2).join('·')+', 역방향은 '+reversed.slice(0,2).join('·')+'에서 출발합니다. 서로 다른 두 의미 축 가운데 앞뒤 카드가 어느 쪽을 구체화하는지 확인하세요.',
+        reflection:'현재 상황에 드러난 '+upright[0]+'의 모습과 '+reversed[0]+'의 단서를 각각 떠올려 보세요.',
+        reverseLove:'관계에서는 '+reversed[0]+'의 양상과 '+reversed[1]+'의 단서를 함께 살펴봅니다.',
+        reverseCareer:'일과 금전에서는 '+reversed[0]+'의 영향과 '+reversed[1]+'의 징후를 함께 확인합니다.',
+        sourcePage:source.sourcePage
+      });
+    }
+    var etteillaMajors=etteillaMajorNames.map(function(name,id){
+      var number=id===0?78:id;
+      return withEtteillaMeaning(MAJ[id],number,name,etteillaMajorSymbols[id]);
+    });
+    var etteillaMinors=buildMinor().map(function(card){
+      var number=etteillaMinorStarts[card.suitCode]-etteillaRanks.indexOf(card.numCode);
+      return withEtteillaMeaning(card,number,'',etteillaMinorSymbol(card,number));
+    });
+    etteillaDeck.setCards(etteillaMajors.concat(etteillaMinors));
+  }
+
+  initDeckChooser();
   renderSpInfo();
   applyLocale();
   handleStartUrl();
@@ -932,32 +1142,34 @@ if('serviceWorker' in navigator){
   var offlineSave=document.getElementById('offlineSave');
   var offlineStatus=document.getElementById('offlineStatus');
 
-  function cacheInstalledCards(registration,manual){
+  function cacheInstalledCards(registration,manual,deckId){
     var connection=navigator.connection;
     if(!manual&&connection&&connection.saveData)return Promise.resolve(null);
     if(!registration.active)return Promise.reject(new Error('활성 서비스 워커가 없습니다.'));
     if(!manual){
-      registration.active.postMessage({type:'CACHE_ALL_CARDS',deckId:S.deckId});
+      registration.active.postMessage({type:'CACHE_ALL_CARDS',deckId:deckId||S.deckId});
       return Promise.resolve(null);
     }
     return new Promise(function(resolve,reject){
       var channel=new MessageChannel();
       channel.port1.onmessage=function(event){channel.port1.close();resolve(event.data);};
       channel.port1.onmessageerror=function(){reject(new Error('오프라인 저장 결과를 받지 못했습니다.'));};
-      registration.active.postMessage({type:'CACHE_ALL_CARDS',deckId:S.deckId},[channel.port2]);
+      registration.active.postMessage({type:'CACHE_ALL_CARDS',deckId:deckId||S.deckId},[channel.port2]);
     });
   }
 
   function saveCardsOffline(){
+    var deck=activeDeck();
     offlineSave.disabled=true;
     offlineSave.classList.remove('is-complete');
     offlineSave.setAttribute('aria-busy','true');
     offlineSave.textContent='저장 중…';
     offlineStatus.textContent='카드 이미지를 저장하고 있어요.';
     navigator.serviceWorker.ready
-      .then(function(registration){return cacheInstalledCards(registration,true);})
+      .then(function(registration){return cacheInstalledCards(registration,true,deck.id);})
       .then(function(result){
         if(!result||result.type!=='CACHE_ALL_CARDS_RESULT'||result.error)throw new Error('잘못된 오프라인 저장 결과입니다.');
+        if(result.deckId!==S.deckId){renderDeckControls();return;}
         if(result.failed===0){
           offlineSave.classList.add('is-complete');
           offlineSave.textContent='저장 완료';

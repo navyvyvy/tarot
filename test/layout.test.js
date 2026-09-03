@@ -69,7 +69,9 @@ test('card dictionary keeps equal cards and full-image artwork', function() {
   assert.match(css, /\.dictionary-group-title\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/);
   assert.match(css, /\.dictionary-card\s*\{[^}]*text-align:\s*center/);
   assert.match(dictionary, /function groupKey\(card\)/);
-  assert.match(dictionary, /group\.textContent=suitName\(card\)/);
+  assert.match(dictionary, /function cardOrder\(card\)/);
+  assert.match(dictionary, /group\.textContent=groupTitle\(card,key,cards\)/);
+  assert.match(dictionary, /card\.number\+' · '\+name/);
   assert.doesNotMatch(dictionary, /dictionary-type/);
 });
 

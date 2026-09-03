@@ -93,13 +93,14 @@ test('shared reading tokens preserve the exact spread and reject invalid data', 
   assert.equal(core.decodeReading('broken'), null);
 });
 
-test('all 78 configured card images exist locally', function() {
-  const deck = deckCatalog.get('rws');
-  const assets = deck.assets();
-  assert.equal(assets.length, 78);
-  assert.equal(new Set(assets).size, 78);
-  assets.forEach(function(asset) {
-    assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), asset);
+test('all available deck images exist locally', function() {
+  ['rws', 'marseille', 'etteilla'].forEach(function(deckId) {
+    const assets = deckCatalog.get(deckId).assets();
+    assert.equal(assets.length, 78);
+    assert.equal(new Set(assets).size, 78);
+    assets.forEach(function(asset) {
+      assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), asset);
+    });
   });
 });
 
@@ -107,7 +108,12 @@ test('deck catalog keeps card lookup and pool selection behind one interface', f
   const deck = deckCatalog.get('rws');
   assert.equal(deckCatalog.defaultId, 'rws');
   assert.equal(deck.shortName, '웨이트');
-  assert.equal(deck.tradition, '라이더–웨이트–스미스');
+  assert.equal(deck.tradition, '라이더-웨이트-스미스');
+  assert.equal(deckCatalog.get('marseille').available, true);
+  assert.equal(deckCatalog.get('marseille').assets().length, 78);
+  assert.equal(deckCatalog.get('etteilla').available, true);
+  assert.equal(deckCatalog.get('etteilla').assets().length, 78);
+  assert.equal(deckCatalog.get('etteilla').featuredCards.love, 13);
   deck.setCards([{ id: 0, type: 'major' }, { id: 22, type: 'minor', suitCode: 'wands', numCode: 'ace' }]);
   assert.equal(deck.card(22).suitCode, 'wands');
   assert.deepEqual(deck.cards('major').map(function(card) { return card.id; }), [0]);
